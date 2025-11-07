@@ -72,10 +72,30 @@ test_result.png
 *.tmp
 *.temp
 
-# Development scripts (security check, etc.)
+# Development and test files
+Backend/app/tests/
 scripts/security_check.py
 scripts/pre-commit-hook.sh
 scripts/dev_tools/
+
+# Development documentation
+DEVELOPMENT.md
+PROJECT_NOTES.md
+PRIVATE_REPO_SUMMARY.md
+NANO_BANANA_INFO.md
+GEMINI_API_INTERACTION.md
+Backend/app/architecture_overview.md
+
+# Test result images
+*.png
+!Frontend/public/*.png
+!Frontend/src/assets/*.png
+
+# Development artifacts
+Backend/app/corrected_test_*.png
+Backend/app/nano_banana_*.png
+Backend/app/test_*.png
+Backend/app/simple_test_*.png
 
 # API keys and credentials (extra safety)
 *api_key*

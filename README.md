@@ -208,4 +208,4 @@ Personal project for learning and experimentation with:
 
 ---
 
-Personal project by [Your Name]
+Built with ❤️ using React, FastAPI, and Google Gemini AI

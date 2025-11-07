@@ -1121,13 +1121,61 @@ const DrawingEditor = () => {
     reader.readAsText(file)
   }
 
-  const handleAIEdit = async (prompt) => {
+  const handleAIEdit = async (prompt, mode = 'replace') => {
     if (!canvas || !prompt.trim()) return
+
+    // Validate selection mode
+    if (mode === 'selection') {
+      const activeObjects = canvas.getActiveObjects()
+      if (activeObjects.length === 0) {
+        alert('Selection mode requires an object to be selected. Please select an object first or choose a different processing mode.')
+        return
+      }
+      if (activeObjects.length > 1) {
+        alert('Selection mode works with single objects only. Please select one object or choose a different processing mode.')
+        return
+      }
+    }
 
     setIsLoading(true)
     try {
-      // Export current canvas as image
-      const imageDataUrl = exportCanvas()
+      // Check if user has selected specific objects
+      const activeObjects = canvas.getActiveObjects()
+      const hasSelection = activeObjects.length > 0
+      
+      let imageDataUrl
+      
+      if (mode === 'selection' && hasSelection && activeObjects.length === 1) {
+        // Process only the selected object
+        const selectedObject = activeObjects[0]
+        if (selectedObject.type === 'image') {
+          // Export just the selected image
+          let tempCanvas = null
+          try {
+            tempCanvas = new fabric.Canvas()
+            tempCanvas.setDimensions({
+              width: Math.max(selectedObject.width * selectedObject.scaleX, 1),
+              height: Math.max(selectedObject.height * selectedObject.scaleY, 1)
+            })
+            
+            const clonedObject = fabric.util.object.clone(selectedObject)
+            clonedObject.set({ left: 0, top: 0, scaleX: 1, scaleY: 1 })
+            tempCanvas.add(clonedObject)
+            
+            imageDataUrl = tempCanvas.toDataURL('image/png')
+          } finally {
+            if (tempCanvas) {
+              tempCanvas.dispose()
+            }
+          }
+        } else {
+          // For non-image objects, export entire canvas
+          imageDataUrl = exportCanvas()
+        }
+      } else {
+        // Export entire canvas as usual
+        imageDataUrl = exportCanvas()
+      }
       
       // Convert data URL to blob
       const response = await fetch(imageDataUrl)
@@ -1171,14 +1219,10 @@ const DrawingEditor = () => {
               canvasSize: { width: canvas.width, height: canvas.height }
             })
             
-            // Clear canvas first
-            canvas.clear()
-            canvas.backgroundColor = 'white'
-            
             // Scale image to fit canvas while maintaining aspect ratio
-            const scaleX = canvas.width / img.width
-            const scaleY = canvas.height / img.height
-            const scale = Math.min(scaleX, scaleY)
+            const scaleX = img.width > 0 ? canvas.width / img.width : 1
+            const scaleY = img.height > 0 ? canvas.height / img.height : 1
+            const scale = Math.min(scaleX, scaleY, 1) // Don't scale up beyond original size
             
             // Center the image on canvas
             const scaledWidth = img.width * scale
@@ -1195,9 +1239,39 @@ const DrawingEditor = () => {
               evented: true
             })
             
-            // Add as a regular object
-            canvas.add(img)
-            canvas.setActiveObject(img)
+            // Apply based on selected processing mode
+            if (mode === 'replace') {
+              // Replace entire canvas
+              canvas.clear()
+              canvas.backgroundColor = 'white'
+              canvas.add(img)
+              canvas.setActiveObject(img)
+            } else if (mode === 'layer') {
+              // Keep original objects, add AI result as background
+              canvas.add(img)
+              canvas.sendToBack(img)
+            } else if (mode === 'selection') {
+              // For selection mode, replace only the selected object
+              const activeObjects = canvas.getActiveObjects()
+              if (activeObjects.length === 1) {
+                const selectedObj = activeObjects[0]
+                // Position new image where the selected object was
+                img.set({
+                  left: selectedObj.left,
+                  top: selectedObj.top,
+                  scaleX: selectedObj.scaleX,
+                  scaleY: selectedObj.scaleY
+                })
+                canvas.remove(selectedObj)
+              }
+              canvas.add(img)
+              canvas.setActiveObject(img)
+            } else {
+              // Default: just add the image
+              canvas.add(img)
+              canvas.setActiveObject(img)
+            }
+            
             canvas.renderAll()
             
             // Save state for undo
@@ -1207,6 +1281,17 @@ const DrawingEditor = () => {
             setTimeout(() => URL.revokeObjectURL(editedImageUrl), 1000)
             
             console.log('✨ AI-edited image loaded and displayed successfully!')
+            
+            // Show user feedback based on mode
+            const modeMessages = {
+              'replace': 'Canvas replaced with AI-enhanced image',
+              'layer': 'AI-enhanced image added as background layer',
+              'selection': 'Selected object replaced with AI-enhanced version'
+            }
+            
+            // Optional: Show a brief success message
+            // You could add a toast notification here
+            console.log(`🎨 ${modeMessages[mode] || 'AI enhancement completed'}`)
           },
           // Error callback
           (error) => {

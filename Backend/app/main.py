@@ -14,21 +14,43 @@ load_dotenv()
 
 app = FastAPI(title="PaintWeaver AI Image Edit API")
 
-# Initialize AI client - Using only Gemini 2.5 Flash
+# Initialize AI clients
 genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
 
-# Single model for everything
-model = None
+# Analysis model (text-only)
+analysis_model = None
 try:
-    model = genai.GenerativeModel('gemini-2.5-flash')
-    print("🚀 Using Gemini 2.5 Flash for all AI operations")
+    analysis_model = genai.GenerativeModel('gemini-2.5-flash')
+    print("🔍 Using Gemini 2.5 Flash for image analysis")
 except Exception as e:
+    print(f"❌ Failed to initialize analysis model: {e}")
+
+# Try image generation models with proper configuration
+generation_model = None
+image_generation_models = [
+    'gemini-2.0-flash-preview-image-generation',  # ✅ CONFIRMED WORKING!
+    'gemini-2.5-flash-image',                     # "Nano Banana" (quota limited)
+    'gemini-2.0-flash-exp-image-generation',      # Experimental
+    'gemini-2.5-flash-image-preview',             # Preview version
+]
+
+for model_name in image_generation_models:
     try:
-        model = genai.GenerativeModel('gemini-2.5-pro')
-        print("💎 Using Gemini 2.5 Pro for all AI operations")
-    except Exception as e2:
-        print(f"❌ Failed to initialize Gemini models: {e}, {e2}")
-        model = None
+        # KEY: Use TEXT, IMAGE response modalities (as supported by the model)
+        generation_model = genai.GenerativeModel(
+            model_name=model_name,
+            generation_config={"response_modalities": ["TEXT", "IMAGE"]}
+        )
+        print(f"🎨 Successfully initialized {model_name} with IMAGE response modality")
+        break
+    except Exception as e:
+        print(f"⚠️ {model_name} not available: {e}")
+        continue
+
+if not generation_model:
+    print("📝 No image generation models available - will use analysis + programmatic editing")
+
+model = analysis_model  # Keep for backward compatibility
 
 ALLOWED_CT = {"image/jpeg", "image/png", "image/webp"}
 MAX_BYTES = 10 * 1024 * 1024  # 10 MB cap
@@ -86,77 +108,183 @@ def _encode_image_to_base64(image_data: bytes) -> str:
     return base64.b64encode(image_data).decode('utf-8')
 
 async def _edit_with_ai(image_data: bytes, prompt: str, content_type: str) -> tuple[bytes, str]:
-    """AI-powered image editing using only Gemini 2.5 Flash"""
+    """AI-powered image editing - tries image generation first, falls back to analysis + programmatic editing"""
     try:
-        if not model:
-            return image_data, "Gemini model not available"
-            
         pil_image = Image.open(BytesIO(image_data))
         
-        # Enhanced prompt for better analysis and editing guidance
-        enhanced_prompt = f"""
-        I want to edit this image with the following request: "{prompt}"
-        
-        Please provide detailed, actionable editing instructions including:
-        
-        1. CURRENT IMAGE ANALYSIS:
-           - What do you see in this image?
-           - Current colors, shapes, style, composition
-        
-        2. EDITING INSTRUCTIONS for "{prompt}":
-           - Specific color changes (provide RGB values)
-           - Brightness/contrast adjustments (provide percentages)
-           - Style transformations needed
-           - Shape or composition changes
-           - Filter effects to apply
-        
-        3. TECHNICAL PARAMETERS:
-           - Exact color values (hex codes or RGB)
-           - Brightness: +/- percentage
-           - Contrast: +/- percentage  
-           - Saturation: +/- percentage
-           - Any blur, sharpen, or other effects with intensity values
-        
-        4. STEP-BY-STEP PROCESS:
-           - Order of operations for best results
-           - Specific tools or techniques to use
-        
-        Be very specific with numerical values and technical details so the edits can be applied programmatically.
-        """
-        
-        try:
-            response = model.generate_content([enhanced_prompt, pil_image])
-            
-            # Check for safety issues
-            if hasattr(response, 'prompt_feedback') and response.prompt_feedback:
-                if hasattr(response.prompt_feedback, 'block_reason'):
-                    print(f"🚫 Prompt blocked: {response.prompt_feedback.block_reason}")
-                    return image_data, f"Request blocked by safety filters: {response.prompt_feedback.block_reason}"
-            
-            # Get the analysis text
-            analysis = ""
+        # Method 1: Try actual image generation using official Gemini pattern
+        if generation_model:
             try:
-                analysis = response.text if response.text else "No analysis provided"
-                print(f"🤖 Gemini 2.5 Analysis: {analysis[:150]}...")
-            except Exception as text_error:
-                print(f"⚠️ Could not get text response: {text_error}")
-                # Check candidates for safety ratings
-                if hasattr(response, 'candidates') and response.candidates:
-                    candidate = response.candidates[0]
-                    if hasattr(candidate, 'safety_ratings'):
-                        print(f"🛡️ Safety ratings: {candidate.safety_ratings}")
-                analysis = "Response blocked by safety filters"
-            
-            # Apply enhanced programmatic edits based on Gemini's analysis
-            edited_image_data = _apply_ai_suggested_edits(image_data, prompt, analysis)
-            
-            return edited_image_data, analysis
-            
-        except Exception as gemini_error:
-            print(f"❌ Gemini processing failed: {gemini_error}")
-            # Fallback to basic programmatic editing
-            edited_image_data = _apply_ai_suggested_edits(image_data, prompt, "")
-            return edited_image_data, f"Applied basic edits for: {prompt}"
+                print(f"🎨 Attempting image generation with: {generation_model._model_name}")
+                print(f"🎯 Prompt: '{prompt}'")
+                
+                # Use the EXACT pattern from Gemini documentation
+                prompt_parts = [
+                    pil_image,  # Pass image object directly (like in docs)
+                    prompt      # Simple prompt (like in docs)
+                ]
+                
+                print("📡 Calling generate_content with IMAGE response modality...")
+                response = generation_model.generate_content(prompt_parts)
+                
+                print("📦 Response received! Processing using official pattern...")
+                
+                # Use EXACT extraction pattern from documentation
+                try:
+                    image_data = response.candidates[0].content.parts[0].inline_data
+                    
+                    # Check if data is base64 string or bytes
+                    if isinstance(image_data.data, str):
+                        # It's base64 encoded string - decode it
+                        generated_image_bytes = base64.b64decode(image_data.data)
+                        print("🔧 Decoded base64 image data")
+                    else:
+                        # It's already bytes
+                        generated_image_bytes = image_data.data
+                        print("📦 Using direct bytes data")
+                    
+                    print("🎉 SUCCESS! Generated image using official Gemini pattern!")
+                    print(f"📏 Generated image size: {len(generated_image_bytes)} bytes")
+                    print(f"🎨 MIME type: {getattr(image_data, 'mime_type', 'unknown')}")
+                    
+                    if len(generated_image_bytes) == 0:
+                        print("❌ WARNING: Generated image is empty (0 bytes)!")
+                        raise Exception("Generated image is empty")
+                    
+                    return generated_image_bytes, f"AI-generated with {generation_model._model_name}: {prompt}"
+                    
+                except Exception as extract_error:
+                    print(f"❌ Failed to extract image using official pattern: {extract_error}")
+                    
+                    # Debug the response structure
+                    print("🔍 Debugging response structure...")
+                    print(f"Response type: {type(response)}")
+                    print(f"Has candidates: {hasattr(response, 'candidates')}")
+                    
+                    if hasattr(response, 'candidates') and response.candidates:
+                        print(f"Candidates count: {len(response.candidates)}")
+                        candidate = response.candidates[0]
+                        print(f"Candidate type: {type(candidate)}")
+                        print(f"Has content: {hasattr(candidate, 'content')}")
+                        
+                        if hasattr(candidate, 'content') and candidate.content.parts:
+                            print(f"Parts count: {len(candidate.content.parts)}")
+                            for i, part in enumerate(candidate.content.parts):
+                                print(f"  Part {i}: {type(part)}")
+                                print(f"  Has inline_data: {hasattr(part, 'inline_data')}")
+                                print(f"  Has text: {hasattr(part, 'text')}")
+                                
+                                if hasattr(part, 'inline_data') and part.inline_data:
+                                    inline_data = part.inline_data
+                                    print(f"  📊 Inline data type: {type(inline_data)}")
+                                    print(f"  📊 MIME type: {getattr(inline_data, 'mime_type', 'unknown')}")
+                                    print(f"  📊 Data type: {type(inline_data.data)}")
+                                    print(f"  📊 Data size: {len(inline_data.data) if inline_data.data else 0} bytes")
+                                    
+                                    if inline_data.data:
+                                        # Try alternative extraction methods
+                                        try:
+                                            if isinstance(inline_data.data, str):
+                                                # If it's base64 string
+                                                generated_data = base64.b64decode(inline_data.data)
+                                                print(f"  ✅ Decoded base64: {len(generated_data)} bytes")
+                                            else:
+                                                # If it's already bytes
+                                                generated_data = inline_data.data
+                                                print(f"  ✅ Direct bytes: {len(generated_data)} bytes")
+                                            
+                                            if len(generated_data) > 0:
+                                                print("✨ Alternative extraction successful!")
+                                                return generated_data, f"AI-generated with {generation_model._model_name}: {prompt}"
+                                            else:
+                                                print("❌ Alternative extraction returned 0 bytes")
+                                                
+                                        except Exception as alt_error:
+                                            print(f"❌ Alternative extraction failed: {alt_error}")
+                                    else:
+                                        print("  ❌ inline_data.data is None or empty")
+                                
+                                elif hasattr(part, 'text'):
+                                    print(f"  📝 Part {i} text: {part.text[:100]}...")
+                    
+                    # Check for text response as fallback
+                    try:
+                        if response.text:
+                            analysis = response.text
+                            print(f"📝 Got text response instead: {analysis[:200]}...")
+                        else:
+                            analysis = "No image generated, no text response"
+                    except:
+                        analysis = "Response structure not accessible"
+                    
+            except Exception as gen_error:
+                print(f"❌ Image generation failed: {gen_error}")
+                analysis = f"Generation failed: {gen_error}"
+        else:
+            analysis = "No image generation model available"
+        
+        # Method 3: Fallback to analysis + programmatic editing
+        if analysis_model:
+            try:
+                print(f"🔍 Using analysis model for guidance...")
+                
+                enhanced_prompt = f"""
+                I want to edit this image with the following request: "{prompt}"
+                
+                Please provide detailed, actionable editing instructions including:
+                
+                1. CURRENT IMAGE ANALYSIS:
+                   - What do you see in this image?
+                   - Current colors, shapes, style, composition
+                
+                2. EDITING INSTRUCTIONS for "{prompt}":
+                   - Specific color changes (provide RGB values)
+                   - Brightness/contrast adjustments (provide percentages)
+                   - Style transformations needed
+                   - Shape or composition changes
+                   - Filter effects to apply
+                
+                3. TECHNICAL PARAMETERS:
+                   - Exact color values (hex codes or RGB)
+                   - Brightness: +/- percentage
+                   - Contrast: +/- percentage  
+                   - Saturation: +/- percentage
+                   - Any blur, sharpen, or other effects with intensity values
+                
+                4. STEP-BY-STEP PROCESS:
+                   - Order of operations for best results
+                   - Specific tools or techniques to use
+                
+                Be very specific with numerical values and technical details so the edits can be applied programmatically.
+                """
+                
+                response = analysis_model.generate_content([enhanced_prompt, pil_image])
+                
+                # Check for safety issues
+                if hasattr(response, 'prompt_feedback') and response.prompt_feedback:
+                    if hasattr(response.prompt_feedback, 'block_reason'):
+                        print(f"🚫 Analysis blocked: {response.prompt_feedback.block_reason}")
+                        return image_data, f"Request blocked by safety filters: {response.prompt_feedback.block_reason}"
+                
+                # Get the analysis text
+                try:
+                    analysis = response.text if response.text else "No analysis provided"
+                    print(f"🤖 Analysis: {analysis[:150]}...")
+                except Exception as text_error:
+                    print(f"⚠️ Could not get analysis: {text_error}")
+                    analysis = "Analysis blocked by safety filters"
+                
+            except Exception as analysis_error:
+                print(f"❌ Analysis failed: {analysis_error}")
+                analysis = f"Analysis failed: {analysis_error}"
+        else:
+            analysis = "No analysis model available"
+        
+        # Apply programmatic edits based on analysis
+        print(f"🔧 Applying programmatic edits based on AI guidance...")
+        edited_image_data = _apply_ai_suggested_edits(image_data, prompt, analysis)
+        
+        return edited_image_data, analysis
         
     except Exception as e:
         print(f"❌ AI editing error: {str(e)}")
@@ -363,19 +491,88 @@ async def test_ai_edit():
         test_data = buf.getvalue()
         
         # Test AI editing
-        edited_data, analysis = await _edit_with_gemini(test_data, "make it blue", "image/png")
+        edited_data, analysis = await _edit_with_ai(test_data, "make it blue", "image/png")
+        
+        # Check if we got a different image (indicating generation worked)
+        image_generated = len(edited_data) != len(test_data)
         
         return {
             "status": "success",
             "message": "AI editing test completed",
-            "analysis_preview": analysis[:100] + "..." if len(analysis) > 100 else analysis,
+            "analysis_preview": analysis[:200] + "..." if len(analysis) > 200 else analysis,
             "original_size": len(test_data),
-            "edited_size": len(edited_data)
+            "edited_size": len(edited_data),
+            "image_generated": image_generated,
+            "generation_model": generation_model._model_name if generation_model else None,
+            "analysis_model": analysis_model._model_name if analysis_model else None
         }
     except Exception as e:
         return {
             "status": "error",
             "message": f"AI editing test failed: {str(e)}"
+        }
+
+@app.get("/test-image-generation")
+async def test_image_generation():
+    """Test which models can actually generate images"""
+    try:
+        results = []
+        
+        # Test image generation models (prioritizing the conversational image editing model)
+        test_models = [
+            'gemini-2.5-flash-image',        # "Nano Banana" - conversational image editing
+            'gemini-2.5-flash-image-preview', # Preview version
+            'imagen-4.0-fast-generate-001',
+            'imagen-4.0-generate-001',
+            'gemini-2.0-flash-exp-image-generation'
+        ]
+        
+        test_img = Image.new('RGB', (100, 100), color='blue')
+        
+        for model_name in test_models:
+            try:
+                model = genai.GenerativeModel(model_name)
+                
+                response = model.generate_content([
+                    "Transform this blue square into a red heart",
+                    test_img
+                ])
+                
+                # Check for image data
+                has_image = False
+                if hasattr(response, 'candidates') and response.candidates:
+                    for candidate in response.candidates:
+                        if hasattr(candidate, 'content') and candidate.content.parts:
+                            for part in candidate.content.parts:
+                                if hasattr(part, 'inline_data') and part.inline_data:
+                                    has_image = True
+                                    break
+                
+                results.append({
+                    "model": model_name,
+                    "status": "available",
+                    "can_generate_images": has_image,
+                    "response_type": "image" if has_image else "text"
+                })
+                
+            except Exception as e:
+                results.append({
+                    "model": model_name,
+                    "status": "error",
+                    "error": str(e),
+                    "can_generate_images": False
+                })
+        
+        return {
+            "status": "success",
+            "results": results,
+            "current_generation_model": generation_model._model_name if generation_model else None
+        }
+        
+    except Exception as e:
+        return {
+            "status": "error",
+            "message": f"Test failed: {str(e)}"
         }
 
 # AI-powered image editing endpoint

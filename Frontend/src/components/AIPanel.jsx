@@ -6,6 +6,7 @@ const AIPanel = ({ onAIEdit, isLoading }) => {
   const [selectedStyle, setSelectedStyle] = useState('')
   const [favorites, setFavorites] = useState([])
   const [showAdvanced, setShowAdvanced] = useState(false)
+  const [processingMode, setProcessingMode] = useState('replace') // 'replace', 'layer', 'selection'
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -31,8 +32,14 @@ const AIPanel = ({ onAIEdit, isLoading }) => {
     }
     setHistory(prev => [newEntry, ...prev.slice(0, 9)]) // Keep last 10
 
-    // Send to AI
-    await onAIEdit(finalPrompt)
+    // Send to AI with processing mode
+    try {
+      await onAIEdit(finalPrompt, processingMode)
+    } catch (error) {
+      console.error('AI Edit failed:', error)
+      // Don't clear the prompt if there was an error
+      return
+    }
     
     // Clear prompt after successful submission
     setPrompt('')
@@ -119,6 +126,22 @@ const AIPanel = ({ onAIEdit, isLoading }) => {
               {stylePresets.map(style => (
                 <option key={style.id} value={style.id}>{style.name}</option>
               ))}
+            </select>
+          </div>
+
+          <div style={{ margin: '0.5rem 0' }}>
+            <label style={{ fontSize: '0.8rem', color: '#666', marginBottom: '0.25rem', display: 'block' }}>
+              Processing Mode:
+            </label>
+            <select
+              value={processingMode}
+              onChange={(e) => setProcessingMode(e.target.value)}
+              disabled={isLoading}
+              style={{ width: '100%', padding: '0.25rem', borderRadius: '4px', border: '1px solid #ddd' }}
+            >
+              <option value="replace">Replace Canvas (flatten to single image)</option>
+              <option value="layer">Add as Background Layer (keep drawings)</option>
+              <option value="selection">Process Selected Object Only</option>
             </select>
           </div>
 
@@ -327,8 +350,10 @@ const AIPanel = ({ onAIEdit, isLoading }) => {
         <div style={{ fontSize: '0.8rem', color: '#666', lineHeight: '1.4' }}>
           <p>• <strong>Be specific:</strong> "bright red sunset" vs "colorful"</p>
           <p>• <strong>Style keywords:</strong> "watercolor", "oil painting", "sketch"</p>
-          <p>• <strong>Add elements:</strong> "add mountains in background"</p>
-          <p>• <strong>Lighting:</strong> "soft lighting", "dramatic shadows"</p>
+          <p>• <strong>Processing modes:</strong></p>
+          <p style={{ marginLeft: '10px' }}>- <strong>Replace:</strong> Flattens canvas to single image</p>
+          <p style={{ marginLeft: '10px' }}>- <strong>Layer:</strong> Keeps your drawings, adds AI as background</p>
+          <p style={{ marginLeft: '10px' }}>- <strong>Selection:</strong> Processes only selected object</p>
           <p>• <strong>Shortcuts:</strong> Ctrl+Z (undo), G (grid), Ctrl+0 (reset zoom)</p>
         </div>
       </div>
