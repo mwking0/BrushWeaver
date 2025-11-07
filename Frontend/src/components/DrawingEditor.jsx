@@ -27,7 +27,61 @@ const DrawingEditor = () => {
   const [canvasOffset, setCanvasOffset] = useState({ x: 0, y: 0 })
   const [hasSelection, setHasSelection] = useState(false)
   const [hasMultipleSelection, setHasMultipleSelection] = useState(false)
+  const [hasGroupSelected, setHasGroupSelected] = useState(false)
   const saveTimeoutRef = useRef(null)
+
+  // Comprehensive cleanup on component unmount
+  useEffect(() => {
+    return () => {
+      // Clear all timeouts
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current)
+      }
+      
+      // Clean up canvas if it exists
+      if (canvas) {
+        // Remove all event listeners
+        canvas.off()
+        
+        // Dispose of all objects to prevent memory leaks
+        const objects = canvas.getObjects()
+        objects.forEach(obj => {
+          if (obj.dispose) {
+            obj.dispose()
+          }
+        })
+        
+        // Clear all objects
+        canvas.clear()
+        
+        // Dispose canvas
+        canvas.dispose()
+      }
+      
+      // Clear history to free memory
+      setHistory([])
+      setHistoryStep(-1)
+    }
+  }, [])
+
+  // Periodic memory cleanup during long sessions
+  useEffect(() => {
+    const cleanupInterval = setInterval(() => {
+      if (canvas) {
+        // Force garbage collection of unused fabric objects
+        canvas.renderAll()
+        
+        // Limit history size more aggressively if memory is a concern
+        if (history.length > 30) {
+          const trimmedHistory = history.slice(-25) // Keep last 25 states
+          setHistory(trimmedHistory)
+          setHistoryStep(Math.min(historyStep, trimmedHistory.length - 1))
+        }
+      }
+    }, 60000) // Run every minute
+    
+    return () => clearInterval(cleanupInterval)
+  }, [canvas, history, historyStep])
 
   // Calculate canvas size (responsive or custom)
   useEffect(() => {
@@ -66,6 +120,10 @@ const DrawingEditor = () => {
     return () => {
       if (!useCustomSize) {
         window.removeEventListener('resize', updateCanvasSize)
+      }
+      // Clear any pending timeouts
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current)
       }
     }
   }, [useCustomSize, customDimensions])
@@ -128,10 +186,16 @@ const DrawingEditor = () => {
         deleteSelectedObjects()
       }
       
-      // Merge objects: Ctrl+M (only when not typing)
-      if ((e.ctrlKey || e.metaKey) && e.key === 'm' && canvas) {
+      // Group objects: Ctrl+G (only when not typing)
+      if ((e.ctrlKey || e.metaKey) && e.key === 'g' && !e.shiftKey && canvas) {
         e.preventDefault()
         mergeSelectedObjects()
+      }
+      
+      // Ungroup objects: Ctrl+Shift+G (only when not typing)
+      if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'G' && canvas) {
+        e.preventDefault()
+        ungroupSelectedObject()
       }
       
       // Tool shortcuts (only when not typing)
@@ -318,19 +382,42 @@ const DrawingEditor = () => {
       fabricCanvas.on('selection:created', (e) => {
         setHasSelection(true)
         setHasMultipleSelection(e.selected && e.selected.length > 1)
+        const activeObj = fabricCanvas.getActiveObject()
+        setHasGroupSelected(activeObj && activeObj.type === 'group')
       })
       fabricCanvas.on('selection:updated', (e) => {
         setHasSelection(true)
         setHasMultipleSelection(e.selected && e.selected.length > 1)
+        const activeObj = fabricCanvas.getActiveObject()
+        setHasGroupSelected(activeObj && activeObj.type === 'group')
       })
       fabricCanvas.on('selection:cleared', () => {
         setHasSelection(false)
         setHasMultipleSelection(false)
+        setHasGroupSelected(false)
       })
 
       setCanvas(fabricCanvas)
 
       return () => {
+        // Clear all timeouts
+        if (saveTimeoutRef.current) {
+          clearTimeout(saveTimeoutRef.current)
+        }
+        
+        // Remove all Fabric.js event listeners
+        fabricCanvas.off('path:created')
+        fabricCanvas.off('object:added')
+        fabricCanvas.off('object:removed')
+        fabricCanvas.off('object:modified')
+        fabricCanvas.off('selection:created')
+        fabricCanvas.off('selection:updated')
+        fabricCanvas.off('selection:cleared')
+        fabricCanvas.off('mouse:down')
+        fabricCanvas.off('mouse:move')
+        fabricCanvas.off('mouse:up')
+        
+        // Dispose of the canvas
         fabricCanvas.dispose()
       }
     } catch (error) {
@@ -736,40 +823,52 @@ const DrawingEditor = () => {
   const mergeSelectedObjects = () => {
     if (!canvas) return
 
-    const activeObjects = canvas.getActiveObjects()
+    const activeSelection = canvas.getActiveObject()
     
-    if (activeObjects.length < 2) {
-      console.log('Need at least 2 objects to merge')
+    if (!activeSelection || activeSelection.type !== 'activeSelection') {
+      console.log('Need at least 2 objects to group')
       return
     }
 
-    // Create a permanent group from selected objects
-    const group = new fabric.Group(activeObjects, {
-      selectable: true,
-      evented: true,
-      // Make it non-ungroupable by removing the ungroup method
-      toObject: function() {
-        return fabric.Group.prototype.toObject.call(this)
-      }
-    })
-
-    // Remove individual objects from canvas
-    activeObjects.forEach(obj => {
-      canvas.remove(obj)
-    })
-
-    // Add the merged group to canvas
-    canvas.add(group)
-    canvas.setActiveObject(group)
-    canvas.renderAll()
+    // Use the built-in toGroup method which properly handles the conversion
+    const group = activeSelection.toGroup()
+    
+    canvas.requestRenderAll()
 
     // Update selection states
     setHasMultipleSelection(false)
+    setHasGroupSelected(true)
 
     // Save state
     setTimeout(() => saveState(canvas), 10)
     
-    console.log(`Merged ${activeObjects.length} objects into a single component`)
+    console.log(`Grouped ${group._objects.length} objects into a single group`)
+  }
+
+  const ungroupSelectedObject = () => {
+    if (!canvas) return
+
+    const activeObject = canvas.getActiveObject()
+    
+    // Check if the selected object is a group
+    if (!activeObject || activeObject.type !== 'group') {
+      console.log('Please select a grouped object to ungroup')
+      return
+    }
+
+    // Use the built-in toActiveSelection method which properly handles ungrouping
+    const items = activeObject.toActiveSelection()
+    
+    canvas.requestRenderAll()
+
+    // Update selection states
+    setHasMultipleSelection(true)
+    setHasGroupSelected(false)
+
+    // Save state
+    setTimeout(() => saveState(canvas), 10)
+    
+    console.log(`Ungrouped into ${items._objects.length} objects`)
   }
 
   const addShape = (shapeType) => {
@@ -1082,11 +1181,15 @@ const DrawingEditor = () => {
     const dataBlob = new Blob([dataStr], { type: 'application/json' })
     
     const link = document.createElement('a')
-    link.href = URL.createObjectURL(dataBlob)
+    const objectUrl = URL.createObjectURL(dataBlob)
+    link.href = objectUrl
     link.download = `${projectData.metadata.name}.json`
     document.body.appendChild(link)
     link.click()
     document.body.removeChild(link)
+    
+    // Clean up the blob URL to prevent memory leak
+    setTimeout(() => URL.revokeObjectURL(objectUrl), 100)
     URL.revokeObjectURL(link.href)
   }
 
@@ -1366,7 +1469,9 @@ const DrawingEditor = () => {
         onDeleteSelected={deleteSelectedObjects}
         hasSelection={hasSelection}
         onMergeObjects={mergeSelectedObjects}
+        onUngroupObject={ungroupSelectedObject}
         hasMultipleSelection={hasMultipleSelection}
+        hasGroupSelected={hasGroupSelected}
       />
       
       <div className="canvas-container">

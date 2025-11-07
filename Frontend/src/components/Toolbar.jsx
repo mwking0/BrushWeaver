@@ -32,7 +32,9 @@ const Toolbar = ({
   onDeleteSelected,
   hasSelection,
   onMergeObjects,
-  hasMultipleSelection
+  onUngroupObject,
+  hasMultipleSelection,
+  hasGroupSelected
 }) => {
   const tools = [
     { id: 'pen', name: 'Pen', icon: '✏️', shortcut: 'P' },
@@ -397,9 +399,23 @@ const Toolbar = ({
               color: 'white',
               opacity: hasMultipleSelection ? 1 : 0.6
             }}
-            title="Merge Selected Objects (Ctrl+M)"
+            title="Group Selected Objects (Ctrl+G)"
           >
-            🔗 Merge
+            🔗 Group
+          </button>
+          <button
+            className="tool-btn"
+            onClick={onUngroupObject}
+            disabled={!hasGroupSelected}
+            style={{ 
+              width: '100%', 
+              background: hasGroupSelected ? '#ffc107' : '#6c757d', 
+              color: hasGroupSelected ? '#000' : 'white',
+              opacity: hasGroupSelected ? 1 : 0.6
+            }}
+            title="Ungroup Selected Group (Ctrl+Shift+G)"
+          >
+            🔓 Ungroup
           </button>
           <button
             className="tool-btn"
