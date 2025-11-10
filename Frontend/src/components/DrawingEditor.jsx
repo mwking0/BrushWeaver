@@ -28,7 +28,18 @@ const DrawingEditor = () => {
   const [hasSelection, setHasSelection] = useState(false)
   const [hasMultipleSelection, setHasMultipleSelection] = useState(false)
   const [hasGroupSelected, setHasGroupSelected] = useState(false)
+  const [canvasObjects, setCanvasObjects] = useState([])
+  const [selectedObjectId, setSelectedObjectId] = useState(null)
   const saveTimeoutRef = useRef(null)
+  const blobUrlsRef = useRef([])
+  const historyRef = useRef([])
+  const historyStepRef = useRef(-1)
+  
+  // Keep refs in sync with state
+  useEffect(() => {
+    historyRef.current = history
+    historyStepRef.current = historyStep
+  }, [history, historyStep])
 
   // Comprehensive cleanup on component unmount
   useEffect(() => {
@@ -37,6 +48,16 @@ const DrawingEditor = () => {
       if (saveTimeoutRef.current) {
         clearTimeout(saveTimeoutRef.current)
       }
+      
+      // Revoke all blob URLs
+      blobUrlsRef.current.forEach(url => {
+        try {
+          URL.revokeObjectURL(url)
+        } catch (e) {
+          console.warn('Failed to revoke blob URL:', e)
+        }
+      })
+      blobUrlsRef.current = []
       
       // Clean up canvas if it exists
       if (canvas) {
@@ -312,12 +333,14 @@ const DrawingEditor = () => {
         if (!fabricCanvas._isUndoRedo) {
           setTimeout(() => saveState(fabricCanvas), 50)
         }
+        updateCanvasObjects()
       })
       
       fabricCanvas.on('object:removed', () => {
         if (!fabricCanvas._isUndoRedo) {
           setTimeout(() => saveState(fabricCanvas), 50)
         }
+        updateCanvasObjects()
       })
       
       // Capture object modifications (moving, scaling, rotating)
@@ -360,6 +383,7 @@ const DrawingEditor = () => {
         const initialState = JSON.stringify(fabricCanvas.toJSON())
         setHistory([initialState])
         setHistoryStep(0)
+        updateCanvasObjects()
       }, 100)
 
       // Handle selection clearing when clicking on empty canvas
@@ -384,17 +408,34 @@ const DrawingEditor = () => {
         setHasMultipleSelection(e.selected && e.selected.length > 1)
         const activeObj = fabricCanvas.getActiveObject()
         setHasGroupSelected(activeObj && activeObj.type === 'group')
+        
+        // Update selected object ID for layers panel
+        if (activeObj && !e.selected) {
+          const objIndex = fabricCanvas.getObjects().indexOf(activeObj)
+          setSelectedObjectId(activeObj.id || `obj-${objIndex}`)
+        } else {
+          setSelectedObjectId(null)
+        }
       })
       fabricCanvas.on('selection:updated', (e) => {
         setHasSelection(true)
         setHasMultipleSelection(e.selected && e.selected.length > 1)
         const activeObj = fabricCanvas.getActiveObject()
         setHasGroupSelected(activeObj && activeObj.type === 'group')
+        
+        // Update selected object ID for layers panel
+        if (activeObj && !e.selected) {
+          const objIndex = fabricCanvas.getObjects().indexOf(activeObj)
+          setSelectedObjectId(activeObj.id || `obj-${objIndex}`)
+        } else {
+          setSelectedObjectId(null)
+        }
       })
       fabricCanvas.on('selection:cleared', () => {
         setHasSelection(false)
         setHasMultipleSelection(false)
         setHasGroupSelected(false)
+        setSelectedObjectId(null)
       })
 
       setCanvas(fabricCanvas)
@@ -410,12 +451,28 @@ const DrawingEditor = () => {
         fabricCanvas.off('object:added')
         fabricCanvas.off('object:removed')
         fabricCanvas.off('object:modified')
+        fabricCanvas.off('object:moved')
+        fabricCanvas.off('object:scaled')
+        fabricCanvas.off('object:rotated')
+        fabricCanvas.off('text:changed')
         fabricCanvas.off('selection:created')
         fabricCanvas.off('selection:updated')
         fabricCanvas.off('selection:cleared')
         fabricCanvas.off('mouse:down')
         fabricCanvas.off('mouse:move')
         fabricCanvas.off('mouse:up')
+        fabricCanvas.off('mouse:wheel')
+        
+        // Dispose of all objects first
+        const objects = fabricCanvas.getObjects()
+        objects.forEach(obj => {
+          if (obj.dispose) {
+            obj.dispose()
+          }
+        })
+        
+        // Clear canvas
+        fabricCanvas.clear()
         
         // Dispose of the canvas
         fabricCanvas.dispose()
@@ -575,8 +632,12 @@ const DrawingEditor = () => {
 
 
   // Enhanced Undo/Redo functionality - Captures ALL actions
-  const saveState = (canvasInstance = canvas) => {
-    if (!canvasInstance || canvasInstance._isUndoRedo) return
+  const saveState = (canvasInstance) => {
+    const targetCanvas = canvasInstance || canvas
+    if (!targetCanvas || targetCanvas._isUndoRedo) {
+      console.log('⏭️ Skipping save:', { hasCanvas: !!targetCanvas, isUndoRedo: targetCanvas?._isUndoRedo })
+      return
+    }
     
     // Clear any pending save to debounce rapid changes
     if (saveTimeoutRef.current) {
@@ -584,37 +645,42 @@ const DrawingEditor = () => {
     }
     
     saveTimeoutRef.current = setTimeout(() => {
-      const currentState = JSON.stringify(canvasInstance.toJSON())
+      const currentState = JSON.stringify(targetCanvas.toJSON())
+      const currentHistory = historyRef.current
+      const currentStep = historyStepRef.current
       
       // Don't save if state hasn't changed
-      if (history.length > 0 && history[historyStep] === currentState) {
+      if (currentHistory.length > 0 && currentHistory[currentStep] === currentState) {
+        console.log('⏭️ State unchanged, skipping save')
         return
       }
       
       // Remove any future history if we're not at the end (after undo)
-      const newHistory = [...history.slice(0, historyStep + 1), currentState]
+      const newHistory = [...currentHistory.slice(0, currentStep + 1), currentState]
       
-      // Limit history to 50 states for comprehensive undo
+      // Limit history to 50 states
       if (newHistory.length > 50) {
         newHistory.shift()
         setHistory(newHistory)
         setHistoryStep(49)
+        console.log(`✅ State saved (trimmed). History: ${newHistory.length}, Step: 49`)
       } else {
         setHistory(newHistory)
         setHistoryStep(newHistory.length - 1)
+        console.log(`✅ State saved. History: ${newHistory.length}, Step: ${newHistory.length - 1}`)
       }
-      
-      console.log(`State saved. History length: ${newHistory.length}, Current step: ${newHistory.length - 1}`)
     }, 100) // Debounce rapid changes
   }
 
   const undo = () => {
+    console.log(`🔙 Undo called. Current step: ${historyStep}, History length: ${history.length}`)
+    
     if (historyStep > 0 && canvas && history.length > 0) {
       const newStep = historyStep - 1
       const previousState = history[newStep]
       
       if (previousState) {
-        console.log(`Undoing to step ${newStep}`)
+        console.log(`↶ Undoing to step ${newStep}`)
         
         // Set flag to prevent saving during undo
         canvas._isUndoRedo = true
@@ -627,23 +693,36 @@ const DrawingEditor = () => {
         canvas.loadFromJSON(previousState, () => {
           canvas.renderAll()
           setHistoryStep(newStep)
+          updateCanvasObjects()
+          
+          console.log(`✅ Undo complete. New step: ${newStep}`)
           
           // Clear the flag after restoration is complete
           setTimeout(() => {
             canvas._isUndoRedo = false
           }, 100)
         })
+      } else {
+        console.log('❌ No previous state found')
       }
+    } else {
+      console.log('❌ Cannot undo:', { 
+        historyStep, 
+        hasCanvas: !!canvas, 
+        historyLength: history.length 
+      })
     }
   }
 
   const redo = () => {
+    console.log(`🔜 Redo called. Current step: ${historyStep}, History length: ${history.length}`)
+    
     if (historyStep < history.length - 1 && canvas && history.length > 0) {
       const newStep = historyStep + 1
       const nextState = history[newStep]
       
       if (nextState) {
-        console.log(`Redoing to step ${newStep}`)
+        console.log(`↷ Redoing to step ${newStep}`)
         
         // Set flag to prevent saving during redo
         canvas._isUndoRedo = true
@@ -656,13 +735,25 @@ const DrawingEditor = () => {
         canvas.loadFromJSON(nextState, () => {
           canvas.renderAll()
           setHistoryStep(newStep)
+          updateCanvasObjects()
+          
+          console.log(`✅ Redo complete. New step: ${newStep}`)
           
           // Clear the flag after restoration is complete
           setTimeout(() => {
             canvas._isUndoRedo = false
           }, 100)
         })
+      } else {
+        console.log('❌ No next state found')
       }
+    } else {
+      console.log('❌ Cannot redo:', { 
+        historyStep, 
+        maxStep: history.length - 1,
+        hasCanvas: !!canvas, 
+        historyLength: history.length 
+      })
     }
   }
 
@@ -871,6 +962,93 @@ const DrawingEditor = () => {
     console.log(`Ungrouped into ${items._objects.length} objects`)
   }
 
+  // Update canvas objects list for layers panel
+  const updateCanvasObjects = () => {
+    if (!canvas) return
+    
+    const objects = canvas.getObjects().map((obj, index) => ({
+      id: obj.id || `obj-${index}`,
+      type: obj.type,
+      index: index
+    }))
+    
+    setCanvasObjects(objects)
+  }
+
+  // Layer management functions
+  const bringToFront = (objectId) => {
+    if (!canvas) return
+    
+    const obj = canvas.getObjects().find(o => (o.id || `obj-${canvas.getObjects().indexOf(o)}`) === objectId)
+    if (obj) {
+      canvas.bringToFront(obj)
+      canvas.renderAll()
+      updateCanvasObjects()
+      setTimeout(() => saveState(canvas), 10)
+    }
+  }
+
+  const sendToBack = (objectId) => {
+    if (!canvas) return
+    
+    const obj = canvas.getObjects().find(o => (o.id || `obj-${canvas.getObjects().indexOf(o)}`) === objectId)
+    if (obj) {
+      canvas.sendToBack(obj)
+      canvas.renderAll()
+      updateCanvasObjects()
+      setTimeout(() => saveState(canvas), 10)
+    }
+  }
+
+  const bringForward = (objectId) => {
+    if (!canvas) return
+    
+    const obj = canvas.getObjects().find(o => (o.id || `obj-${canvas.getObjects().indexOf(o)}`) === objectId)
+    if (obj) {
+      canvas.bringForward(obj)
+      canvas.renderAll()
+      updateCanvasObjects()
+      setTimeout(() => saveState(canvas), 10)
+    }
+  }
+
+  const sendBackward = (objectId) => {
+    if (!canvas) return
+    
+    const obj = canvas.getObjects().find(o => (o.id || `obj-${canvas.getObjects().indexOf(o)}`) === objectId)
+    if (obj) {
+      canvas.sendBackward(obj)
+      canvas.renderAll()
+      updateCanvasObjects()
+      setTimeout(() => saveState(canvas), 10)
+    }
+  }
+
+  const selectObjectById = (objectId) => {
+    if (!canvas) return
+    
+    const obj = canvas.getObjects().find(o => (o.id || `obj-${canvas.getObjects().indexOf(o)}`) === objectId)
+    if (obj) {
+      canvas.setActiveObject(obj)
+      canvas.renderAll()
+    }
+  }
+
+  const reorderLayers = (fromIndex, toIndex) => {
+    if (!canvas) return
+    
+    const objects = canvas.getObjects()
+    const obj = objects[fromIndex]
+    
+    if (!obj) return
+    
+    // Move object to new position
+    canvas.moveTo(obj, toIndex)
+    canvas.renderAll()
+    updateCanvasObjects()
+    setTimeout(() => saveState(canvas), 10)
+  }
+
   const addShape = (shapeType) => {
     if (!canvas) return
 
@@ -1032,7 +1210,8 @@ const DrawingEditor = () => {
     }
 
     const reader = new FileReader()
-    reader.onload = (e) => {
+    
+    const handleLoad = (e) => {
       const imgUrl = e.target.result
       
       fabric.Image.fromURL(imgUrl, (img) => {
@@ -1064,9 +1243,13 @@ const DrawingEditor = () => {
         
         // Set as background image
         canvas.setBackgroundImage(img, canvas.renderAll.bind(canvas))
+        
+        // Clean up event listener
+        reader.removeEventListener('load', handleLoad)
       })
     }
     
+    reader.addEventListener('load', handleLoad)
     reader.readAsDataURL(file)
   }
 
@@ -1080,7 +1263,8 @@ const DrawingEditor = () => {
     }
 
     const reader = new FileReader()
-    reader.onload = (e) => {
+    
+    const handleLoad = (e) => {
       const imgUrl = e.target.result
       
       fabric.Image.fromURL(imgUrl, (img) => {
@@ -1098,9 +1282,13 @@ const DrawingEditor = () => {
         canvas.add(img)
         canvas.setActiveObject(img)
         canvas.renderAll()
+        
+        // Clean up event listener
+        reader.removeEventListener('load', handleLoad)
       })
     }
     
+    reader.addEventListener('load', handleLoad)
     reader.readAsDataURL(file)
   }
 
@@ -1197,7 +1385,8 @@ const DrawingEditor = () => {
     if (!canvas || !file) return
 
     const reader = new FileReader()
-    reader.onload = (e) => {
+    
+    const handleLoad = (e) => {
       try {
         const projectData = JSON.parse(e.target.result)
         
@@ -1218,9 +1407,13 @@ const DrawingEditor = () => {
       } catch (error) {
         console.error('Error loading project:', error)
         alert('Failed to load project file. Please check the file format.')
+      } finally {
+        // Clean up event listener
+        reader.removeEventListener('load', handleLoad)
       }
     }
     
+    reader.addEventListener('load', handleLoad)
     reader.readAsText(file)
   }
 
@@ -1305,6 +1498,7 @@ const DrawingEditor = () => {
         })
         
         const editedImageUrl = URL.createObjectURL(editedImageBlob)
+        blobUrlsRef.current.push(editedImageUrl) // Track for cleanup
         console.log('🔗 Created blob URL:', editedImageUrl)
         
         // Get AI analysis from response headers if available
@@ -1381,7 +1575,14 @@ const DrawingEditor = () => {
             setTimeout(() => saveState(canvas), 100)
             
             // Clean up the blob URL to prevent memory leaks
-            setTimeout(() => URL.revokeObjectURL(editedImageUrl), 1000)
+            setTimeout(() => {
+              URL.revokeObjectURL(editedImageUrl)
+              // Remove from tracking array
+              const index = blobUrlsRef.current.indexOf(editedImageUrl)
+              if (index > -1) {
+                blobUrlsRef.current.splice(index, 1)
+              }
+            }, 1000)
             
             console.log('✨ AI-edited image loaded and displayed successfully!')
             
@@ -1400,6 +1601,11 @@ const DrawingEditor = () => {
           (error) => {
             console.error('❌ Failed to load AI-edited image:', error)
             URL.revokeObjectURL(editedImageUrl)
+            // Remove from tracking array
+            const index = blobUrlsRef.current.indexOf(editedImageUrl)
+            if (index > -1) {
+              blobUrlsRef.current.splice(index, 1)
+            }
             alert('Failed to display AI-edited image. The editing was completed but display failed.')
           },
           // Options
@@ -1520,6 +1726,14 @@ const DrawingEditor = () => {
       <AIPanel
         onAIEdit={handleAIEdit}
         isLoading={isLoading}
+        canvasObjects={canvasObjects}
+        onBringToFront={bringToFront}
+        onSendToBack={sendToBack}
+        onBringForward={bringForward}
+        onSendBackward={sendBackward}
+        onSelectObject={selectObjectById}
+        selectedObjectId={selectedObjectId}
+        onReorderLayers={reorderLayers}
       />
     </>
   )

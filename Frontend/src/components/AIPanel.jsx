@@ -1,12 +1,16 @@
 import React, { useState } from 'react'
 
-const AIPanel = ({ onAIEdit, isLoading }) => {
+const AIPanel = ({ onAIEdit, isLoading, canvasObjects, onBringToFront, onSendToBack, onBringForward, onSendBackward, onSelectObject, selectedObjectId, onReorderLayers }) => {
   const [prompt, setPrompt] = useState('')
   const [history, setHistory] = useState([])
   const [selectedStyle, setSelectedStyle] = useState('')
   const [favorites, setFavorites] = useState([])
   const [showAdvanced, setShowAdvanced] = useState(false)
   const [processingMode, setProcessingMode] = useState('replace') // 'replace', 'layer', 'selection'
+  const [draggedLayer, setDraggedLayer] = useState(null)
+  const [dragOverLayer, setDragOverLayer] = useState(null)
+  const [objectA, setObjectA] = useState('')
+  const [objectB, setObjectB] = useState('')
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -98,6 +102,70 @@ const AIPanel = ({ onAIEdit, isLoading }) => {
 
   const removeFromFavorites = (promptText) => {
     setFavorites(favorites.filter(fav => fav !== promptText))
+  }
+
+  // Drag and drop handlers for layers
+  const handleDragStart = (e, layerId) => {
+    setDraggedLayer(layerId)
+    e.dataTransfer.effectAllowed = 'move'
+  }
+
+  const handleDragOver = (e, layerId) => {
+    e.preventDefault()
+    e.dataTransfer.dropEffect = 'move'
+    setDragOverLayer(layerId)
+  }
+
+  const handleDragLeave = () => {
+    setDragOverLayer(null)
+  }
+
+  const handleDrop = (e, targetLayerId) => {
+    e.preventDefault()
+    
+    if (draggedLayer && draggedLayer !== targetLayerId && onReorderLayers) {
+      // Find indices
+      const draggedIndex = canvasObjects.findIndex(obj => obj.id === draggedLayer)
+      const targetIndex = canvasObjects.findIndex(obj => obj.id === targetLayerId)
+      
+      if (draggedIndex !== -1 && targetIndex !== -1) {
+        onReorderLayers(draggedIndex, targetIndex)
+      }
+    }
+    
+    setDraggedLayer(null)
+    setDragOverLayer(null)
+  }
+
+  const handleDragEnd = () => {
+    setDraggedLayer(null)
+    setDragOverLayer(null)
+  }
+
+  const handlePlaceAbove = () => {
+    if (!objectA || !objectB || !onReorderLayers) return
+    
+    const indexA = canvasObjects.findIndex(obj => obj.id === objectA)
+    const indexB = canvasObjects.findIndex(obj => obj.id === objectB)
+    
+    if (indexA !== -1 && indexB !== -1) {
+      // Place A above B (higher index = on top)
+      const targetIndex = indexB > indexA ? indexB : indexB + 1
+      onReorderLayers(indexA, targetIndex)
+    }
+  }
+
+  const handlePlaceBelow = () => {
+    if (!objectA || !objectB || !onReorderLayers) return
+    
+    const indexA = canvasObjects.findIndex(obj => obj.id === objectA)
+    const indexB = canvasObjects.findIndex(obj => obj.id === objectB)
+    
+    if (indexA !== -1 && indexB !== -1) {
+      // Place A below B (lower index = below)
+      const targetIndex = indexB < indexA ? indexB : indexB
+      onReorderLayers(indexA, targetIndex)
+    }
   }
 
   return (
@@ -341,6 +409,328 @@ const AIPanel = ({ onAIEdit, isLoading }) => {
                 <div>{entry.originalPrompt || entry.prompt}</div>
               </div>
             ))}
+          </div>
+        </div>
+      )}
+
+      {canvasObjects && canvasObjects.length > 1 && (
+        <div className="tool-group">
+          <h3>🔄 Layer Order</h3>
+          <div style={{ 
+            background: '#f8f9fa',
+            padding: '0.75rem',
+            borderRadius: '4px',
+            border: '1px solid #e9ecef'
+          }}>
+            <div style={{ fontSize: '0.75rem', color: '#666', marginBottom: '0.5rem' }}>
+              Choose which object goes above the other:
+            </div>
+            
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+              <div>
+                <label style={{ fontSize: '0.7rem', color: '#666', display: 'block', marginBottom: '0.25rem' }}>
+                  Object 1:
+                </label>
+                <select
+                  value={objectA}
+                  onChange={(e) => setObjectA(e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '0.4rem',
+                    borderRadius: '3px',
+                    border: '1px solid #ddd',
+                    fontSize: '0.75rem'
+                  }}
+                >
+                  <option value="">Select object...</option>
+                  {canvasObjects.map((obj, index) => (
+                    <option key={obj.id} value={obj.id}>
+                      {obj.type === 'path' && '✏️ Drawing'}
+                      {obj.type === 'rect' && '⬜ Rectangle'}
+                      {obj.type === 'circle' && '⭕ Circle'}
+                      {obj.type === 'triangle' && '🔺 Triangle'}
+                      {obj.type === 'line' && '📏 Line'}
+                      {obj.type === 'i-text' && '📝 Text'}
+                      {obj.type === 'image' && '🖼️ Image'}
+                      {obj.type === 'group' && '🔗 Group'}
+                      {!['path', 'rect', 'circle', 'triangle', 'line', 'i-text', 'image', 'group'].includes(obj.type) && `📦 ${obj.type}`}
+                      {' (Layer ' + (index + 1) + ')'}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label style={{ fontSize: '0.7rem', color: '#666', display: 'block', marginBottom: '0.25rem' }}>
+                  Object 2:
+                </label>
+                <select
+                  value={objectB}
+                  onChange={(e) => setObjectB(e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '0.4rem',
+                    borderRadius: '3px',
+                    border: '1px solid #ddd',
+                    fontSize: '0.75rem'
+                  }}
+                >
+                  <option value="">Select object...</option>
+                  {canvasObjects.map((obj, index) => (
+                    <option key={obj.id} value={obj.id}>
+                      {obj.type === 'path' && '✏️ Drawing'}
+                      {obj.type === 'rect' && '⬜ Rectangle'}
+                      {obj.type === 'circle' && '⭕ Circle'}
+                      {obj.type === 'triangle' && '🔺 Triangle'}
+                      {obj.type === 'line' && '📏 Line'}
+                      {obj.type === 'i-text' && '📝 Text'}
+                      {obj.type === 'image' && '🖼️ Image'}
+                      {obj.type === 'group' && '🔗 Group'}
+                      {!['path', 'rect', 'circle', 'triangle', 'line', 'i-text', 'image', 'group'].includes(obj.type) && `📦 ${obj.type}`}
+                      {' (Layer ' + (index + 1) + ')'}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.25rem' }}>
+                <button
+                  onClick={handlePlaceAbove}
+                  disabled={!objectA || !objectB || objectA === objectB}
+                  style={{
+                    flex: 1,
+                    padding: '0.5rem',
+                    background: (!objectA || !objectB || objectA === objectB) ? '#e9ecef' : '#28a745',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '3px',
+                    cursor: (!objectA || !objectB || objectA === objectB) ? 'not-allowed' : 'pointer',
+                    fontSize: '0.7rem',
+                    fontWeight: 'bold',
+                    opacity: (!objectA || !objectB || objectA === objectB) ? 0.6 : 1
+                  }}
+                  title="Place Object 1 above Object 2"
+                >
+                  ⬆️ 1 Above 2
+                </button>
+                <button
+                  onClick={handlePlaceBelow}
+                  disabled={!objectA || !objectB || objectA === objectB}
+                  style={{
+                    flex: 1,
+                    padding: '0.5rem',
+                    background: (!objectA || !objectB || objectA === objectB) ? '#e9ecef' : '#dc3545',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '3px',
+                    cursor: (!objectA || !objectB || objectA === objectB) ? 'not-allowed' : 'pointer',
+                    fontSize: '0.7rem',
+                    fontWeight: 'bold',
+                    opacity: (!objectA || !objectB || objectA === objectB) ? 0.6 : 1
+                  }}
+                  title="Place Object 1 below Object 2"
+                >
+                  ⬇️ 1 Below 2
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {canvasObjects && canvasObjects.length > 0 && (
+        <div className="tool-group" style={{ padding: 0, background: '#2b2b2b', borderRadius: '4px' }}>
+          {/* Photoshop-style header */}
+          <div style={{ 
+            background: '#3a3a3a',
+            padding: '0.5rem',
+            borderBottom: '1px solid #1a1a1a',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center'
+          }}>
+            <h3 style={{ margin: 0, color: '#b8b8b8', fontSize: '0.85rem', fontWeight: 'normal' }}>Layers</h3>
+            <div style={{ display: 'flex', gap: '0.25rem' }}>
+              <button style={{ 
+                background: 'none', 
+                border: 'none', 
+                color: '#b8b8b8', 
+                cursor: 'pointer',
+                padding: '0.25rem',
+                fontSize: '0.9rem'
+              }} title="Add new layer">
+                ➕
+              </button>
+              <button style={{ 
+                background: 'none', 
+                border: 'none', 
+                color: '#b8b8b8', 
+                cursor: 'pointer',
+                padding: '0.25rem',
+                fontSize: '0.9rem'
+              }} title="Delete layer">
+                🗑️
+              </button>
+            </div>
+          </div>
+
+          {/* Blend mode and opacity controls */}
+          <div style={{ 
+            background: '#2b2b2b',
+            padding: '0.5rem',
+            borderBottom: '1px solid #1a1a1a'
+          }}>
+            <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem' }}>
+              <select style={{
+                flex: 1,
+                background: '#3a3a3a',
+                border: '1px solid #1a1a1a',
+                color: '#b8b8b8',
+                padding: '0.25rem',
+                fontSize: '0.7rem',
+                borderRadius: '2px'
+              }}>
+                <option>Normal</option>
+                <option>Multiply</option>
+                <option>Screen</option>
+                <option>Overlay</option>
+              </select>
+              <div style={{ 
+                display: 'flex', 
+                alignItems: 'center', 
+                gap: '0.25rem',
+                color: '#b8b8b8',
+                fontSize: '0.7rem'
+              }}>
+                <span>Opacity:</span>
+                <span>100%</span>
+              </div>
+            </div>
+            <div style={{ 
+              display: 'flex', 
+              gap: '0.5rem',
+              color: '#b8b8b8',
+              fontSize: '0.7rem',
+              alignItems: 'center'
+            }}>
+              <span>Lock:</span>
+              <button style={{ background: '#3a3a3a', border: 'none', color: '#b8b8b8', padding: '0.2rem 0.4rem', cursor: 'pointer', borderRadius: '2px' }}>🔒</button>
+              <button style={{ background: '#3a3a3a', border: 'none', color: '#b8b8b8', padding: '0.2rem 0.4rem', cursor: 'pointer', borderRadius: '2px' }}>✏️</button>
+              <button style={{ background: '#3a3a3a', border: 'none', color: '#b8b8b8', padding: '0.2rem 0.4rem', cursor: 'pointer', borderRadius: '2px' }}>🎨</button>
+            </div>
+          </div>
+
+          {/* Layers list */}
+          <div style={{ 
+            maxHeight: '350px', 
+            overflowY: 'auto', 
+            background: '#2b2b2b',
+            padding: '0.25rem'
+          }}>
+            {canvasObjects.slice().reverse().map((obj, reverseIndex) => {
+              const actualIndex = canvasObjects.length - 1 - reverseIndex
+              const isSelected = obj.id === selectedObjectId
+              const isDragging = draggedLayer === obj.id
+              const isDragOver = dragOverLayer === obj.id
+              
+              return (
+                <div
+                  key={obj.id || actualIndex}
+                  draggable
+                  onDragStart={(e) => handleDragStart(e, obj.id)}
+                  onDragOver={(e) => handleDragOver(e, obj.id)}
+                  onDragLeave={handleDragLeave}
+                  onDrop={(e) => handleDrop(e, obj.id)}
+                  onDragEnd={handleDragEnd}
+                  onClick={() => onSelectObject && onSelectObject(obj.id)}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.5rem',
+                    padding: '0.4rem',
+                    margin: '1px 0',
+                    background: isSelected ? '#4a7bb7' : isDragOver ? '#3a3a3a' : '#2b2b2b',
+                    border: isSelected ? '1px solid #5a8bc7' : '1px solid transparent',
+                    cursor: isDragging ? 'grabbing' : 'pointer',
+                    fontSize: '0.75rem',
+                    color: '#d4d4d4',
+                    opacity: isDragging ? 0.5 : 1,
+                    transition: 'background 0.1s ease'
+                  }}
+                >
+                  {/* Eye icon for visibility */}
+                  <div style={{ 
+                    width: '20px',
+                    textAlign: 'center',
+                    fontSize: '0.9rem',
+                    color: '#b8b8b8',
+                    cursor: 'pointer'
+                  }} title="Toggle visibility">
+                    👁️
+                  </div>
+
+                  {/* Thumbnail */}
+                  <div style={{ 
+                    width: '50px', 
+                    height: '50px', 
+                    background: 'linear-gradient(45deg, #555 25%, transparent 25%, transparent 75%, #555 75%, #555), linear-gradient(45deg, #555 25%, #3a3a3a 25%, #3a3a3a 75%, #555 75%, #555)',
+                    backgroundSize: '10px 10px',
+                    backgroundPosition: '0 0, 5px 5px',
+                    border: '1px solid #1a1a1a',
+                    borderRadius: '2px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '1.5rem',
+                    flexShrink: 0,
+                    boxShadow: 'inset 0 0 3px rgba(0,0,0,0.5)'
+                  }}>
+                    {obj.type === 'path' && '✏️'}
+                    {obj.type === 'rect' && '⬜'}
+                    {obj.type === 'circle' && '⭕'}
+                    {obj.type === 'triangle' && '🔺'}
+                    {obj.type === 'line' && '📏'}
+                    {obj.type === 'i-text' && '📝'}
+                    {obj.type === 'image' && '🖼️'}
+                    {obj.type === 'group' && '📁'}
+                    {!['path', 'rect', 'circle', 'triangle', 'line', 'i-text', 'image', 'group'].includes(obj.type) && '📦'}
+                  </div>
+
+                  {/* Layer name */}
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ 
+                      fontWeight: isSelected ? '600' : 'normal',
+                      fontSize: '0.8rem',
+                      whiteSpace: 'nowrap',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      color: isSelected ? '#ffffff' : '#d4d4d4'
+                    }}>
+                      {obj.type === 'path' && 'Drawing'}
+                      {obj.type === 'rect' && 'Rectangle'}
+                      {obj.type === 'circle' && 'Circle'}
+                      {obj.type === 'triangle' && 'Triangle'}
+                      {obj.type === 'line' && 'Line'}
+                      {obj.type === 'i-text' && 'Text'}
+                      {obj.type === 'image' && 'Image'}
+                      {obj.type === 'group' && 'Group'}
+                      {!['path', 'rect', 'circle', 'triangle', 'line', 'i-text', 'image', 'group'].includes(obj.type) && obj.type}
+                    </div>
+                  </div>
+
+                  {/* Effects indicator (optional) */}
+                  {obj.type === 'group' && (
+                    <div style={{ 
+                      fontSize: '0.7rem', 
+                      color: '#888',
+                      fontStyle: 'italic'
+                    }}>
+                      fx
+                    </div>
+                  )}
+                </div>
+              )
+            })}
           </div>
         </div>
       )}

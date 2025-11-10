@@ -77,6 +77,7 @@ Backend/app/tests/
 scripts/security_check.py
 scripts/pre-commit-hook.sh
 scripts/dev_tools/
+Backend/app/pin/
 
 # Development documentation
 DEVELOPMENT.md
@@ -96,6 +97,7 @@ Backend/app/corrected_test_*.png
 Backend/app/nano_banana_*.png
 Backend/app/test_*.png
 Backend/app/simple_test_*.png
+
 
 # API keys and credentials (extra safety)
 *api_key*
