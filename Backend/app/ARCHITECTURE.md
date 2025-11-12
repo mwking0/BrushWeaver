@@ -1,7 +1,7 @@
 # Backend Architecture
 
 ## Overview
-The PaintWeaver backend has been refactored following clean architecture principles with clear separation of concerns.
+The BrushWeaver backend has been refactored following clean architecture principles with clear separation of concerns.
 
 ## Project Structure
 

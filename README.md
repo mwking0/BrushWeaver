@@ -1,4 +1,4 @@
-# 🎨 PaintWeaver - Personal AI Image Editor
+# 🎨 BrushWeaver - Personal AI Image Editor
 
 My personal web-based image editor that combines intuitive drawing tools with AI-powered image enhancement using Google's Gemini 2.5 Flash.
 
@@ -50,8 +50,8 @@ My personal web-based image editor that combines intuitive drawing tools with AI
 
 ### 1. Clone the Repository
 ```bash
-git clone https://github.com/yourusername/paintweaver.git
-cd paintweaver
+git clone https://github.com/yourusername/brushweaver.git
+cd brushweaver
 ```
 
 ### 2. Backend Setup
@@ -146,7 +146,7 @@ OPENAI_API_KEY=your_openai_api_key_here
 
 ### Project Structure
 ```
-paintweaver/
+brushweaver/
 ├── Frontend/                 # React frontend application
 │   ├── src/
 │   │   ├── components/      # React components

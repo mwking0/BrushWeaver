@@ -306,7 +306,11 @@ const DrawingEditor = () => {
       const fabricCanvas = new fabric.Canvas(canvasRef.current, {
         width: canvasSize.width,
         height: canvasSize.height,
-        backgroundColor: 'white'
+        backgroundColor: 'white',
+        // Enable multi-selection with Ctrl key (in addition to default Shift key)
+        selectionKey: 'ctrlKey',
+        // Allow both Shift and Ctrl for multi-selection
+        uniScaleKey: 'shiftKey'
       })
 
       // Set initial drawing mode
@@ -327,6 +331,7 @@ const DrawingEditor = () => {
         if (!fabricCanvas._isUndoRedo) {
           setTimeout(() => saveState(fabricCanvas), 50)
         }
+        updateCanvasObjects()
       })
       
       fabricCanvas.on('object:added', () => {
@@ -348,6 +353,7 @@ const DrawingEditor = () => {
         if (!fabricCanvas._isUndoRedo) {
           setTimeout(() => saveState(fabricCanvas), 50)
         }
+        updateCanvasObjects()
       })
       
       // Capture object movements
@@ -438,7 +444,65 @@ const DrawingEditor = () => {
         setSelectedObjectId(null)
       })
 
+      // Custom handler for Ctrl+click multi-selection
+      fabricCanvas.on('mouse:down', (options) => {
+        if (!options.target) return
+        
+        const e = options.e
+        // Check if Ctrl key (or Cmd on Mac) is pressed
+        const isMultiSelectKey = e.ctrlKey || e.metaKey
+        
+        if (isMultiSelectKey && fabricCanvas.selection) {
+          const clickedObject = options.target
+          const activeSelection = fabricCanvas.getActiveObject()
+          
+          // If there's already an active selection
+          if (activeSelection) {
+            if (activeSelection.type === 'activeSelection') {
+              // If the clicked object is already in the selection, remove it
+              const objects = activeSelection.getObjects()
+              if (objects.includes(clickedObject)) {
+                activeSelection.removeWithUpdate(clickedObject)
+                fabricCanvas.discardActiveObject()
+                
+                // If only one object left, select it directly
+                if (objects.length === 2) {
+                  const remainingObject = objects.find(obj => obj !== clickedObject)
+                  fabricCanvas.setActiveObject(remainingObject)
+                } else if (objects.length > 2) {
+                  // Re-create active selection without the removed object
+                  const newSelection = new fabric.ActiveSelection(
+                    objects.filter(obj => obj !== clickedObject),
+                    { canvas: fabricCanvas }
+                  )
+                  fabricCanvas.setActiveObject(newSelection)
+                }
+              } else {
+                // Add the clicked object to the selection
+                activeSelection.addWithUpdate(clickedObject)
+              }
+              fabricCanvas.requestRenderAll()
+            } else {
+              // Single object selected, create a new multi-selection
+              if (activeSelection !== clickedObject) {
+                const newSelection = new fabric.ActiveSelection([activeSelection, clickedObject], {
+                  canvas: fabricCanvas
+                })
+                fabricCanvas.discardActiveObject()
+                fabricCanvas.setActiveObject(newSelection)
+                fabricCanvas.requestRenderAll()
+              }
+            }
+          }
+        }
+      })
+
       setCanvas(fabricCanvas)
+      
+      // Initial update of canvas objects
+      setTimeout(() => {
+        updateCanvasObjects()
+      }, 150)
 
       return () => {
         // Clear all timeouts
@@ -492,6 +556,13 @@ const DrawingEditor = () => {
       canvas.renderAll()
     }
   }, [canvas, canvasSize])
+  
+  // Update canvas objects list when canvas is ready
+  useEffect(() => {
+    if (canvas) {
+      updateCanvasObjects()
+    }
+  }, [canvas])
 
 
 
@@ -1173,18 +1244,18 @@ const DrawingEditor = () => {
       case 'jpeg':
       case 'jpg':
         dataURL = canvas.toDataURL('image/jpeg', quality)
-        filename = `paintweaver_${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}.jpg`
+        filename = `brushweaver_${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}.jpg`
         mimeType = 'image/jpeg'
         break
       case 'svg':
         dataURL = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(canvas.toSVG())}`
-        filename = `paintweaver_${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}.svg`
+        filename = `brushweaver_${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}.svg`
         mimeType = 'image/svg+xml'
         break
       case 'png':
       default:
         dataURL = canvas.toDataURL('image/png', quality)
-        filename = `paintweaver_${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}.png`
+        filename = `brushweaver_${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}.png`
         mimeType = 'image/png'
         break
     }
@@ -1359,7 +1430,7 @@ const DrawingEditor = () => {
     const projectData = {
       canvas: canvas.toJSON(),
       metadata: {
-        name: `PaintWeaver_${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}`,
+        name: `BrushWeaver_${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}`,
         created: new Date().toISOString(),
         canvasSize: canvasSize
       }

@@ -2,7 +2,7 @@
 
 ## ✅ Completed Successfully!
 
-The PaintWeaver backend has been successfully refactored from a monolithic structure to a clean, modular architecture.
+The BrushWeaver backend has been successfully refactored from a monolithic structure to a clean, modular architecture.
 
 ## What Was Done
 

@@ -16,6 +16,7 @@ router = APIRouter(prefix="/edit", tags=["Image Editing"])
 async def edit_image(
     file: UploadFile = File(...),
     prompt: str = Form(..., description="AI editing prompt"),
+    style: str = Form("none", description="Style preset: none|realistic|cartoon|artistic|sketch|watercolor|oil-painting|anime"),
     format: str = Form("same", description="jpeg|png|webp|same"),
     width: Optional[int] = Form(None, ge=1, le=settings.MAX_IMAGE_DIMENSION),
     height: Optional[int] = Form(None, ge=1, le=settings.MAX_IMAGE_DIMENSION),
@@ -60,11 +61,12 @@ async def edit_image(
     ai_analysis = ""
     if use_ai and prompt:
         try:
-            print(f"🤖 Starting AI image generation: '{prompt}'")
+            print(f"🤖 Starting AI image generation: '{prompt}' with style: '{style}'")
             data, ai_analysis = await ai_service.edit_image_with_ai(
                 data,
                 prompt,
-                file.content_type
+                file.content_type,
+                style=style
             )
             print("✅ AI image generation completed")
         except Exception as e:

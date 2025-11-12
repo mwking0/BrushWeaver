@@ -8,17 +8,17 @@ function App() {
         <div className="header-content">
           <div className="header-left">
             <div className="logo-container">
-              <img src="/logo.png" alt="PaintWeaver Logo" className="logo" />
+              <img src="/logo.png" alt="BrushWeaver Logo" className="logo" />
               <div className="logo-glow"></div>
             </div>
             <div className="header-text">
               <h1 className="brand-title">
                 <span className="brand-paint">
-                  <span className="letter">P</span>
-                  <span className="letter">a</span>
-                  <span className="letter">i</span>
-                  <span className="letter">n</span>
-                  <span className="letter">t</span>
+                  <span className="letter">B</span>
+                  <span className="letter">r</span>
+                  <span className="letter">u</span>
+                  <span className="letter">s</span>
+                  <span className="letter">h</span>
                 </span>
                 <span className="brand-weaver">
                   <span className="letter">W</span>

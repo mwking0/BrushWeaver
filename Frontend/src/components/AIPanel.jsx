@@ -538,85 +538,60 @@ const AIPanel = ({ onAIEdit, isLoading, canvasObjects, onBringToFront, onSendToB
         </div>
       )}
 
-      {canvasObjects && canvasObjects.length > 0 && (
-        <div className="tool-group" style={{ padding: 0, background: '#2b2b2b', borderRadius: '4px' }}>
-          {/* Photoshop-style header */}
+      <div className="tool-group" style={{ 
+        padding: 0, 
+        background: 'linear-gradient(145deg, #ffffff 0%, #f8fafc 100%)', 
+        borderRadius: '12px',
+        border: '1px solid rgba(102, 126, 234, 0.1)',
+        boxShadow: '0 4px 12px rgba(0, 0, 0, 0.05)'
+      }}>
+          {/* Layers header */}
           <div style={{ 
-            background: '#3a3a3a',
-            padding: '0.5rem',
-            borderBottom: '1px solid #1a1a1a',
+            background: 'linear-gradient(135deg, rgba(102, 126, 234, 0.05) 0%, rgba(118, 75, 162, 0.05) 100%)',
+            padding: '0.75rem 1rem',
+            borderBottom: '1px solid rgba(102, 126, 234, 0.1)',
             display: 'flex',
             justifyContent: 'space-between',
-            alignItems: 'center'
+            alignItems: 'center',
+            borderRadius: '12px 12px 0 0'
           }}>
-            <h3 style={{ margin: 0, color: '#b8b8b8', fontSize: '0.85rem', fontWeight: 'normal' }}>Layers</h3>
-            <div style={{ display: 'flex', gap: '0.25rem' }}>
+            <h3 style={{ 
+              margin: 0, 
+              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+              backgroundClip: 'text',
+              fontSize: '0.95rem', 
+              fontWeight: '700',
+              letterSpacing: '0.02em'
+            }}>🎨 Layers</h3>
+            <div style={{ display: 'flex', gap: '0.5rem' }}>
               <button style={{ 
-                background: 'none', 
-                border: 'none', 
-                color: '#b8b8b8', 
+                background: 'linear-gradient(145deg, #ffffff 0%, #f8fafc 100%)', 
+                border: '1px solid rgba(102, 126, 234, 0.2)', 
+                color: '#667eea', 
                 cursor: 'pointer',
-                padding: '0.25rem',
-                fontSize: '0.9rem'
+                padding: '0.4rem 0.6rem',
+                fontSize: '0.85rem',
+                borderRadius: '8px',
+                transition: 'all 0.3s ease',
+                boxShadow: '0 2px 6px rgba(0, 0, 0, 0.04)'
               }} title="Add new layer">
                 ➕
               </button>
               <button style={{ 
-                background: 'none', 
-                border: 'none', 
-                color: '#b8b8b8', 
+                background: 'linear-gradient(145deg, #ffffff 0%, #f8fafc 100%)', 
+                border: '1px solid rgba(239, 68, 68, 0.2)', 
+                color: '#ef4444', 
                 cursor: 'pointer',
-                padding: '0.25rem',
-                fontSize: '0.9rem'
+                padding: '0.4rem 0.6rem',
+                fontSize: '0.85rem',
+                borderRadius: '8px',
+                transition: 'all 0.3s ease',
+                boxShadow: '0 2px 6px rgba(0, 0, 0, 0.04)'
               }} title="Delete layer">
                 🗑️
               </button>
-            </div>
-          </div>
-
-          {/* Blend mode and opacity controls */}
-          <div style={{ 
-            background: '#2b2b2b',
-            padding: '0.5rem',
-            borderBottom: '1px solid #1a1a1a'
-          }}>
-            <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem' }}>
-              <select style={{
-                flex: 1,
-                background: '#3a3a3a',
-                border: '1px solid #1a1a1a',
-                color: '#b8b8b8',
-                padding: '0.25rem',
-                fontSize: '0.7rem',
-                borderRadius: '2px'
-              }}>
-                <option>Normal</option>
-                <option>Multiply</option>
-                <option>Screen</option>
-                <option>Overlay</option>
-              </select>
-              <div style={{ 
-                display: 'flex', 
-                alignItems: 'center', 
-                gap: '0.25rem',
-                color: '#b8b8b8',
-                fontSize: '0.7rem'
-              }}>
-                <span>Opacity:</span>
-                <span>100%</span>
-              </div>
-            </div>
-            <div style={{ 
-              display: 'flex', 
-              gap: '0.5rem',
-              color: '#b8b8b8',
-              fontSize: '0.7rem',
-              alignItems: 'center'
-            }}>
-              <span>Lock:</span>
-              <button style={{ background: '#3a3a3a', border: 'none', color: '#b8b8b8', padding: '0.2rem 0.4rem', cursor: 'pointer', borderRadius: '2px' }}>🔒</button>
-              <button style={{ background: '#3a3a3a', border: 'none', color: '#b8b8b8', padding: '0.2rem 0.4rem', cursor: 'pointer', borderRadius: '2px' }}>✏️</button>
-              <button style={{ background: '#3a3a3a', border: 'none', color: '#b8b8b8', padding: '0.2rem 0.4rem', cursor: 'pointer', borderRadius: '2px' }}>🎨</button>
             </div>
           </div>
 
@@ -624,10 +599,11 @@ const AIPanel = ({ onAIEdit, isLoading, canvasObjects, onBringToFront, onSendToB
           <div style={{ 
             maxHeight: '350px', 
             overflowY: 'auto', 
-            background: '#2b2b2b',
-            padding: '0.25rem'
+            background: 'linear-gradient(145deg, #fafbfc 0%, #f1f5f9 100%)',
+            padding: '0.75rem',
+            borderRadius: '0 0 12px 12px'
           }}>
-            {canvasObjects.slice().reverse().map((obj, reverseIndex) => {
+            {canvasObjects && canvasObjects.length > 0 && canvasObjects.slice().reverse().map((obj, reverseIndex) => {
               const actualIndex = canvasObjects.length - 1 - reverseIndex
               const isSelected = obj.id === selectedObjectId
               const isDragging = draggedLayer === obj.id
@@ -646,44 +622,59 @@ const AIPanel = ({ onAIEdit, isLoading, canvasObjects, onBringToFront, onSendToB
                   style={{
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '0.5rem',
-                    padding: '0.4rem',
-                    margin: '1px 0',
-                    background: isSelected ? '#4a7bb7' : isDragOver ? '#3a3a3a' : '#2b2b2b',
-                    border: isSelected ? '1px solid #5a8bc7' : '1px solid transparent',
+                    gap: '0.75rem',
+                    padding: '0.75rem',
+                    margin: '0.5rem 0',
+                    background: isSelected 
+                      ? 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' 
+                      : isDragOver 
+                        ? 'linear-gradient(145deg, #e2e8f0 0%, #cbd5e0 100%)'
+                        : 'linear-gradient(145deg, #ffffff 0%, #f8fafc 100%)',
+                    border: isSelected 
+                      ? '2px solid rgba(102, 126, 234, 0.3)' 
+                      : '1px solid rgba(102, 126, 234, 0.1)',
+                    borderRadius: '10px',
                     cursor: isDragging ? 'grabbing' : 'pointer',
-                    fontSize: '0.75rem',
-                    color: '#d4d4d4',
+                    fontSize: '0.85rem',
+                    color: isSelected ? '#ffffff' : '#374151',
                     opacity: isDragging ? 0.5 : 1,
-                    transition: 'background 0.1s ease'
+                    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                    boxShadow: isSelected 
+                      ? '0 8px 25px rgba(102, 126, 234, 0.3)' 
+                      : '0 2px 8px rgba(0, 0, 0, 0.04)',
+                    transform: isSelected ? 'translateY(-1px)' : 'none'
                   }}
                 >
                   {/* Eye icon for visibility */}
                   <div style={{ 
-                    width: '20px',
+                    width: '24px',
                     textAlign: 'center',
-                    fontSize: '0.9rem',
-                    color: '#b8b8b8',
-                    cursor: 'pointer'
+                    fontSize: '1rem',
+                    color: isSelected ? '#ffffff' : '#667eea',
+                    cursor: 'pointer',
+                    transition: 'transform 0.2s ease'
                   }} title="Toggle visibility">
                     👁️
                   </div>
 
                   {/* Thumbnail */}
                   <div style={{ 
-                    width: '50px', 
-                    height: '50px', 
-                    background: 'linear-gradient(45deg, #555 25%, transparent 25%, transparent 75%, #555 75%, #555), linear-gradient(45deg, #555 25%, #3a3a3a 25%, #3a3a3a 75%, #555 75%, #555)',
-                    backgroundSize: '10px 10px',
-                    backgroundPosition: '0 0, 5px 5px',
-                    border: '1px solid #1a1a1a',
-                    borderRadius: '2px',
+                    width: '48px', 
+                    height: '48px', 
+                    background: isSelected
+                      ? 'linear-gradient(145deg, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0.1) 100%)'
+                      : 'linear-gradient(145deg, #f1f5f9 0%, #e2e8f0 100%)',
+                    border: `2px solid ${isSelected ? 'rgba(255, 255, 255, 0.3)' : 'rgba(102, 126, 234, 0.1)'}`,
+                    borderRadius: '8px',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
                     fontSize: '1.5rem',
                     flexShrink: 0,
-                    boxShadow: 'inset 0 0 3px rgba(0,0,0,0.5)'
+                    boxShadow: isSelected 
+                      ? '0 4px 12px rgba(0, 0, 0, 0.1)' 
+                      : '0 2px 6px rgba(0, 0, 0, 0.05)',
+                    transition: 'all 0.3s ease'
                   }}>
                     {obj.type === 'path' && '✏️'}
                     {obj.type === 'rect' && '⬜'}
@@ -699,12 +690,13 @@ const AIPanel = ({ onAIEdit, isLoading, canvasObjects, onBringToFront, onSendToB
                   {/* Layer name */}
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ 
-                      fontWeight: isSelected ? '600' : 'normal',
-                      fontSize: '0.8rem',
+                      fontWeight: isSelected ? '700' : '500',
+                      fontSize: '0.9rem',
                       whiteSpace: 'nowrap',
                       overflow: 'hidden',
                       textOverflow: 'ellipsis',
-                      color: isSelected ? '#ffffff' : '#d4d4d4'
+                      color: isSelected ? '#ffffff' : '#374151',
+                      letterSpacing: '0.01em'
                     }}>
                       {obj.type === 'path' && 'Drawing'}
                       {obj.type === 'rect' && 'Rectangle'}
@@ -721,9 +713,15 @@ const AIPanel = ({ onAIEdit, isLoading, canvasObjects, onBringToFront, onSendToB
                   {/* Effects indicator (optional) */}
                   {obj.type === 'group' && (
                     <div style={{ 
-                      fontSize: '0.7rem', 
-                      color: '#888',
-                      fontStyle: 'italic'
+                      fontSize: '0.75rem', 
+                      color: isSelected ? 'rgba(255, 255, 255, 0.8)' : '#667eea',
+                      fontStyle: 'italic',
+                      fontWeight: '600',
+                      padding: '0.25rem 0.5rem',
+                      background: isSelected 
+                        ? 'rgba(255, 255, 255, 0.2)' 
+                        : 'rgba(102, 126, 234, 0.1)',
+                      borderRadius: '6px'
                     }}>
                       fx
                     </div>
@@ -731,9 +729,38 @@ const AIPanel = ({ onAIEdit, isLoading, canvasObjects, onBringToFront, onSendToB
                 </div>
               )
             })}
+            {(!canvasObjects || canvasObjects.length === 0) && (
+              <div style={{
+                padding: '3rem 2rem',
+                textAlign: 'center',
+                background: 'linear-gradient(145deg, #ffffff 0%, #f8fafc 100%)',
+                borderRadius: '10px',
+                border: '2px dashed rgba(102, 126, 234, 0.2)',
+                margin: '0.5rem'
+              }}>
+                <div style={{ 
+                  fontSize: '3rem', 
+                  marginBottom: '1rem',
+                  filter: 'drop-shadow(0 4px 12px rgba(102, 126, 234, 0.2))'
+                }}>🎨</div>
+                <div style={{
+                  fontSize: '1rem',
+                  fontWeight: '600',
+                  background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
+                  backgroundClip: 'text',
+                  marginBottom: '0.5rem'
+                }}>No objects on canvas</div>
+                <div style={{ 
+                  fontSize: '0.85rem', 
+                  color: '#6b7280',
+                  fontWeight: '500'
+                }}>Start drawing to see layers appear here</div>
+              </div>
+            )}
           </div>
-        </div>
-      )}
+      </div>
 
       <div className="tool-group">
         <h3>💡 Tips</h3>

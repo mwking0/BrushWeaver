@@ -1,4 +1,4 @@
-# 🎨 PaintWeaver Frontend
+# 🎨 BrushWeaver Frontend
 
 Modern React-based image editor with AI-powered enhancement capabilities. Built with Vite for fast development and optimized production builds.
 
@@ -288,7 +288,7 @@ export default defineConfig({
 ```env
 # .env.local
 VITE_API_URL=http://localhost:8000
-VITE_APP_NAME=PaintWeaver
+VITE_APP_NAME=BrushWeaver
 VITE_VERSION=1.0.0
 ```
 

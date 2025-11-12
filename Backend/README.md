@@ -1,4 +1,4 @@
-# 🔧 PaintWeaver Backend
+# 🔧 BrushWeaver Backend
 
 FastAPI-based backend service that provides AI-powered image editing capabilities using Google's Gemini 2.5 Flash.
 

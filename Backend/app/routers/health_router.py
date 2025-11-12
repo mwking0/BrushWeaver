@@ -22,7 +22,7 @@ def health_check():
     """Health check endpoint"""
     return {
         "ok": True,
-        "service": "PaintWeaver AI Backend",
+        "service": "BrushWeaver AI Backend",
         "ai_provider": "Google Gemini"
     }
 

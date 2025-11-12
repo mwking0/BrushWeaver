@@ -1,5 +1,5 @@
 # app/main.py
-"""PaintWeaver AI Backend - Main application entry point"""
+"""BrushWeaver AI Backend - Main application entry point"""
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from config import settings
@@ -8,7 +8,7 @@ from routers import health_router, image_router
 
 # Initialize FastAPI app
 app = FastAPI(
-    title="PaintWeaver AI Image Edit API",
+    title="BrushWeaver AI Image Edit API",
     description="AI-powered image editing with Google Gemini",
     version="2.0.0"
 )
@@ -31,7 +31,7 @@ app.include_router(image_router.router)
 if __name__ == "__main__":
     import uvicorn
     
-    print("🎨 PaintWeaver Backend Server Starting...")
+    print("🎨 BrushWeaver Backend Server Starting...")
     print(f"📡 Server: http://{settings.HOST}:{settings.PORT}")
     print(f"📚 API Docs: http://{settings.HOST}:{settings.PORT}/docs")
     print(f"🧪 Test Gemini: http://{settings.HOST}:{settings.PORT}/test-gemini")

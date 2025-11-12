@@ -1,8 +1,8 @@
-# How PaintWeaver Backend Works
+# How BrushWeaver Backend Works
 
 ## 🎯 Overview
 
-PaintWeaver's backend is a FastAPI application that uses Google's Gemini AI to intelligently edit images based on natural language prompts. It combines AI-powered analysis with traditional image processing.
+BrushWeaver's backend is a FastAPI application that uses Google's Gemini AI to intelligently edit images based on natural language prompts. It combines AI-powered analysis with traditional image processing.
 
 ## 🔄 Complete Flow: User → Frontend → Backend → Gemini → Response
 
