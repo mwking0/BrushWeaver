@@ -331,21 +331,39 @@ const DrawingEditor = () => {
         if (!fabricCanvas._isUndoRedo) {
           setTimeout(() => saveState(fabricCanvas), 50)
         }
-        updateCanvasObjects()
+        // Update layers panel immediately
+        const objects = fabricCanvas.getObjects().map((obj, index) => ({
+          id: obj.id || `obj-${index}`,
+          type: obj.type,
+          index: index
+        }))
+        setCanvasObjects(objects)
       })
       
       fabricCanvas.on('object:added', () => {
         if (!fabricCanvas._isUndoRedo) {
           setTimeout(() => saveState(fabricCanvas), 50)
         }
-        updateCanvasObjects()
+        // Update layers panel immediately
+        const objects = fabricCanvas.getObjects().map((obj, index) => ({
+          id: obj.id || `obj-${index}`,
+          type: obj.type,
+          index: index
+        }))
+        setCanvasObjects(objects)
       })
       
       fabricCanvas.on('object:removed', () => {
         if (!fabricCanvas._isUndoRedo) {
           setTimeout(() => saveState(fabricCanvas), 50)
         }
-        updateCanvasObjects()
+        // Update layers panel immediately
+        const objects = fabricCanvas.getObjects().map((obj, index) => ({
+          id: obj.id || `obj-${index}`,
+          type: obj.type,
+          index: index
+        }))
+        setCanvasObjects(objects)
       })
       
       // Capture object modifications (moving, scaling, rotating)
@@ -353,7 +371,13 @@ const DrawingEditor = () => {
         if (!fabricCanvas._isUndoRedo) {
           setTimeout(() => saveState(fabricCanvas), 50)
         }
-        updateCanvasObjects()
+        // Update layers panel immediately
+        const objects = fabricCanvas.getObjects().map((obj, index) => ({
+          id: obj.id || `obj-${index}`,
+          type: obj.type,
+          index: index
+        }))
+        setCanvasObjects(objects)
       })
       
       // Capture object movements
@@ -389,7 +413,13 @@ const DrawingEditor = () => {
         const initialState = JSON.stringify(fabricCanvas.toJSON())
         setHistory([initialState])
         setHistoryStep(0)
-        updateCanvasObjects()
+        // Update layers panel immediately
+        const objects = fabricCanvas.getObjects().map((obj, index) => ({
+          id: obj.id || `obj-${index}`,
+          type: obj.type,
+          index: index
+        }))
+        setCanvasObjects(objects)
       }, 100)
 
       // Handle selection clearing when clicking on empty canvas
@@ -501,7 +531,12 @@ const DrawingEditor = () => {
       
       // Initial update of canvas objects
       setTimeout(() => {
-        updateCanvasObjects()
+        const objects = fabricCanvas.getObjects().map((obj, index) => ({
+          id: obj.id || `obj-${index}`,
+          type: obj.type,
+          index: index
+        }))
+        setCanvasObjects(objects)
       }, 150)
 
       return () => {
@@ -977,6 +1012,9 @@ const DrawingEditor = () => {
       canvas.discardActiveObject()
       canvas.renderAll()
       
+      // Update layers panel immediately
+      updateCanvasObjects()
+      
       // Save state immediately for delete action
       setTimeout(() => saveState(canvas), 50)
     }
@@ -1000,6 +1038,9 @@ const DrawingEditor = () => {
     // Update selection states
     setHasMultipleSelection(false)
     setHasGroupSelected(true)
+
+    // Update layers panel immediately
+    updateCanvasObjects()
 
     // Save state
     setTimeout(() => saveState(canvas), 10)
@@ -1027,6 +1068,9 @@ const DrawingEditor = () => {
     setHasMultipleSelection(true)
     setHasGroupSelected(false)
 
+    // Update layers panel immediately
+    updateCanvasObjects()
+
     // Save state
     setTimeout(() => saveState(canvas), 10)
     
@@ -1040,10 +1084,24 @@ const DrawingEditor = () => {
     const objects = canvas.getObjects().map((obj, index) => ({
       id: obj.id || `obj-${index}`,
       type: obj.type,
+      name: obj.name || null,
       index: index
     }))
     
     setCanvasObjects(objects)
+  }
+
+  // Rename layer function
+  const renameLayer = (objectId, newName) => {
+    if (!canvas) return
+    
+    const obj = canvas.getObjects().find(o => (o.id || `obj-${canvas.getObjects().indexOf(o)}`) === objectId)
+    if (obj) {
+      obj.name = newName
+      canvas.renderAll()
+      updateCanvasObjects()
+      setTimeout(() => saveState(canvas), 10)
+    }
   }
 
   // Layer management functions
@@ -1111,12 +1169,21 @@ const DrawingEditor = () => {
     const objects = canvas.getObjects()
     const obj = objects[fromIndex]
     
-    if (!obj) return
+    if (!obj) {
+      console.log('Object not found at index:', fromIndex)
+      return
+    }
     
-    // Move object to new position
+    console.log(`Reordering: moving object from index ${fromIndex} to ${toIndex}`)
+    
+    // Move object to new position in the z-index stack
     canvas.moveTo(obj, toIndex)
     canvas.renderAll()
+    
+    // Update the layers panel to reflect the new order
     updateCanvasObjects()
+    
+    // Save state for undo/redo
     setTimeout(() => saveState(canvas), 10)
   }
 
@@ -1805,6 +1872,7 @@ const DrawingEditor = () => {
         onSelectObject={selectObjectById}
         selectedObjectId={selectedObjectId}
         onReorderLayers={reorderLayers}
+        onRenameLayer={renameLayer}
       />
     </>
   )

@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 
-const AIPanel = ({ onAIEdit, isLoading, canvasObjects, onBringToFront, onSendToBack, onBringForward, onSendBackward, onSelectObject, selectedObjectId, onReorderLayers }) => {
+const AIPanel = ({ onAIEdit, isLoading, canvasObjects, onBringToFront, onSendToBack, onBringForward, onSendBackward, onSelectObject, selectedObjectId, onReorderLayers, onRenameLayer }) => {
   const [prompt, setPrompt] = useState('')
   const [history, setHistory] = useState([])
   const [selectedStyle, setSelectedStyle] = useState('')
@@ -9,8 +9,8 @@ const AIPanel = ({ onAIEdit, isLoading, canvasObjects, onBringToFront, onSendToB
   const [processingMode, setProcessingMode] = useState('replace') // 'replace', 'layer', 'selection'
   const [draggedLayer, setDraggedLayer] = useState(null)
   const [dragOverLayer, setDragOverLayer] = useState(null)
-  const [objectA, setObjectA] = useState('')
-  const [objectB, setObjectB] = useState('')
+  const [editingLayerId, setEditingLayerId] = useState(null)
+  const [editingLayerName, setEditingLayerName] = useState('')
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -124,11 +124,12 @@ const AIPanel = ({ onAIEdit, isLoading, canvasObjects, onBringToFront, onSendToB
     e.preventDefault()
     
     if (draggedLayer && draggedLayer !== targetLayerId && onReorderLayers) {
-      // Find indices
+      // Find indices in the original canvas order
       const draggedIndex = canvasObjects.findIndex(obj => obj.id === draggedLayer)
       const targetIndex = canvasObjects.findIndex(obj => obj.id === targetLayerId)
       
       if (draggedIndex !== -1 && targetIndex !== -1) {
+        // Call reorder with the actual canvas indices
         onReorderLayers(draggedIndex, targetIndex)
       }
     }
@@ -142,31 +143,40 @@ const AIPanel = ({ onAIEdit, isLoading, canvasObjects, onBringToFront, onSendToB
     setDragOverLayer(null)
   }
 
-  const handlePlaceAbove = () => {
-    if (!objectA || !objectB || !onReorderLayers) return
-    
-    const indexA = canvasObjects.findIndex(obj => obj.id === objectA)
-    const indexB = canvasObjects.findIndex(obj => obj.id === objectB)
-    
-    if (indexA !== -1 && indexB !== -1) {
-      // Place A above B (higher index = on top)
-      const targetIndex = indexB > indexA ? indexB : indexB + 1
-      onReorderLayers(indexA, targetIndex)
-    }
+  // Rename layer handlers
+  const startRenaming = (obj) => {
+    setEditingLayerId(obj.id)
+    setEditingLayerName(obj.name || getDefaultLayerName(obj.type))
   }
 
-  const handlePlaceBelow = () => {
-    if (!objectA || !objectB || !onReorderLayers) return
-    
-    const indexA = canvasObjects.findIndex(obj => obj.id === objectA)
-    const indexB = canvasObjects.findIndex(obj => obj.id === objectB)
-    
-    if (indexA !== -1 && indexB !== -1) {
-      // Place A below B (lower index = below)
-      const targetIndex = indexB < indexA ? indexB : indexB
-      onReorderLayers(indexA, targetIndex)
+  const finishRenaming = () => {
+    if (editingLayerId && editingLayerName.trim() && onRenameLayer) {
+      onRenameLayer(editingLayerId, editingLayerName.trim())
     }
+    setEditingLayerId(null)
+    setEditingLayerName('')
   }
+
+  const cancelRenaming = () => {
+    setEditingLayerId(null)
+    setEditingLayerName('')
+  }
+
+  const getDefaultLayerName = (type) => {
+    const names = {
+      'path': 'Drawing',
+      'rect': 'Rectangle',
+      'circle': 'Circle',
+      'triangle': 'Triangle',
+      'line': 'Line',
+      'i-text': 'Text',
+      'image': 'Image',
+      'group': 'Group'
+    }
+    return names[type] || type
+  }
+
+
 
   return (
     <div className="ai-panel">
@@ -301,239 +311,6 @@ const AIPanel = ({ onAIEdit, isLoading, canvasObjects, onBringToFront, onSendToB
                 </button>
               </div>
             ))}
-          </div>
-        </div>
-      )}
-
-      <div className="tool-group">
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-          <h3>💡 Quick Prompts</h3>
-          <button
-            onClick={() => setShowAdvanced(!showAdvanced)}
-            style={{
-              background: 'none',
-              border: 'none',
-              cursor: 'pointer',
-              fontSize: '0.8rem',
-              color: '#007bff'
-            }}
-          >
-            {showAdvanced ? 'Simple' : 'Advanced'}
-          </button>
-        </div>
-        
-        {showAdvanced ? (
-          Object.entries(promptCategories).map(([category, prompts]) => (
-            <div key={category} style={{ marginBottom: '1rem' }}>
-              <h4 style={{ fontSize: '0.8rem', color: '#666', marginBottom: '0.25rem' }}>
-                {category}
-              </h4>
-              <div>
-                {prompts.map((suggestion, index) => (
-                  <button
-                    key={index}
-                    className="tool-btn"
-                    onClick={() => setPrompt(suggestion)}
-                    disabled={isLoading}
-                    style={{ 
-                      width: '100%', 
-                      marginBottom: '0.25rem', 
-                      textAlign: 'left',
-                      fontSize: '0.75rem',
-                      padding: '0.4rem 0.6rem'
-                    }}
-                  >
-                    {suggestion}
-                  </button>
-                ))}
-              </div>
-            </div>
-          ))
-        ) : (
-          <div className="tool-buttons">
-            {Object.values(promptCategories).flat().slice(0, 6).map((suggestion, index) => (
-              <button
-                key={index}
-                className="tool-btn"
-                onClick={() => setPrompt(suggestion)}
-                disabled={isLoading}
-                style={{ width: '100%', marginBottom: '0.25rem', textAlign: 'left' }}
-              >
-                {suggestion}
-              </button>
-            ))}
-          </div>
-        )}
-      </div>
-
-      {history.length > 0 && (
-        <div className="tool-group">
-          <h3>📝 Recent Prompts</h3>
-          <div style={{ maxHeight: '200px', overflowY: 'auto' }}>
-            {history.map((entry) => (
-              <div
-                key={entry.id}
-                style={{
-                  padding: '0.5rem',
-                  margin: '0.25rem 0',
-                  background: '#f8f9fa',
-                  borderRadius: '4px',
-                  cursor: 'pointer',
-                  fontSize: '0.8rem',
-                  border: '1px solid #e9ecef'
-                }}
-                onClick={() => useHistoryPrompt(entry.originalPrompt || entry.prompt)}
-                title="Click to use this prompt"
-              >
-                <div style={{ 
-                  display: 'flex', 
-                  justifyContent: 'space-between', 
-                  alignItems: 'center',
-                  marginBottom: '0.25rem' 
-                }}>
-                  <span style={{ fontWeight: 'bold', fontSize: '0.7rem' }}>
-                    {entry.timestamp}
-                  </span>
-                  {entry.style && (
-                    <span style={{ 
-                      background: '#007bff', 
-                      color: 'white', 
-                      padding: '0.1rem 0.3rem', 
-                      borderRadius: '2px',
-                      fontSize: '0.6rem'
-                    }}>
-                      {stylePresets.find(s => s.id === entry.style)?.name}
-                    </span>
-                  )}
-                </div>
-                <div>{entry.originalPrompt || entry.prompt}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {canvasObjects && canvasObjects.length > 1 && (
-        <div className="tool-group">
-          <h3>🔄 Layer Order</h3>
-          <div style={{ 
-            background: '#f8f9fa',
-            padding: '0.75rem',
-            borderRadius: '4px',
-            border: '1px solid #e9ecef'
-          }}>
-            <div style={{ fontSize: '0.75rem', color: '#666', marginBottom: '0.5rem' }}>
-              Choose which object goes above the other:
-            </div>
-            
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-              <div>
-                <label style={{ fontSize: '0.7rem', color: '#666', display: 'block', marginBottom: '0.25rem' }}>
-                  Object 1:
-                </label>
-                <select
-                  value={objectA}
-                  onChange={(e) => setObjectA(e.target.value)}
-                  style={{
-                    width: '100%',
-                    padding: '0.4rem',
-                    borderRadius: '3px',
-                    border: '1px solid #ddd',
-                    fontSize: '0.75rem'
-                  }}
-                >
-                  <option value="">Select object...</option>
-                  {canvasObjects.map((obj, index) => (
-                    <option key={obj.id} value={obj.id}>
-                      {obj.type === 'path' && '✏️ Drawing'}
-                      {obj.type === 'rect' && '⬜ Rectangle'}
-                      {obj.type === 'circle' && '⭕ Circle'}
-                      {obj.type === 'triangle' && '🔺 Triangle'}
-                      {obj.type === 'line' && '📏 Line'}
-                      {obj.type === 'i-text' && '📝 Text'}
-                      {obj.type === 'image' && '🖼️ Image'}
-                      {obj.type === 'group' && '🔗 Group'}
-                      {!['path', 'rect', 'circle', 'triangle', 'line', 'i-text', 'image', 'group'].includes(obj.type) && `📦 ${obj.type}`}
-                      {' (Layer ' + (index + 1) + ')'}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label style={{ fontSize: '0.7rem', color: '#666', display: 'block', marginBottom: '0.25rem' }}>
-                  Object 2:
-                </label>
-                <select
-                  value={objectB}
-                  onChange={(e) => setObjectB(e.target.value)}
-                  style={{
-                    width: '100%',
-                    padding: '0.4rem',
-                    borderRadius: '3px',
-                    border: '1px solid #ddd',
-                    fontSize: '0.75rem'
-                  }}
-                >
-                  <option value="">Select object...</option>
-                  {canvasObjects.map((obj, index) => (
-                    <option key={obj.id} value={obj.id}>
-                      {obj.type === 'path' && '✏️ Drawing'}
-                      {obj.type === 'rect' && '⬜ Rectangle'}
-                      {obj.type === 'circle' && '⭕ Circle'}
-                      {obj.type === 'triangle' && '🔺 Triangle'}
-                      {obj.type === 'line' && '📏 Line'}
-                      {obj.type === 'i-text' && '📝 Text'}
-                      {obj.type === 'image' && '🖼️ Image'}
-                      {obj.type === 'group' && '🔗 Group'}
-                      {!['path', 'rect', 'circle', 'triangle', 'line', 'i-text', 'image', 'group'].includes(obj.type) && `📦 ${obj.type}`}
-                      {' (Layer ' + (index + 1) + ')'}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.25rem' }}>
-                <button
-                  onClick={handlePlaceAbove}
-                  disabled={!objectA || !objectB || objectA === objectB}
-                  style={{
-                    flex: 1,
-                    padding: '0.5rem',
-                    background: (!objectA || !objectB || objectA === objectB) ? '#e9ecef' : '#28a745',
-                    color: 'white',
-                    border: 'none',
-                    borderRadius: '3px',
-                    cursor: (!objectA || !objectB || objectA === objectB) ? 'not-allowed' : 'pointer',
-                    fontSize: '0.7rem',
-                    fontWeight: 'bold',
-                    opacity: (!objectA || !objectB || objectA === objectB) ? 0.6 : 1
-                  }}
-                  title="Place Object 1 above Object 2"
-                >
-                  ⬆️ 1 Above 2
-                </button>
-                <button
-                  onClick={handlePlaceBelow}
-                  disabled={!objectA || !objectB || objectA === objectB}
-                  style={{
-                    flex: 1,
-                    padding: '0.5rem',
-                    background: (!objectA || !objectB || objectA === objectB) ? '#e9ecef' : '#dc3545',
-                    color: 'white',
-                    border: 'none',
-                    borderRadius: '3px',
-                    cursor: (!objectA || !objectB || objectA === objectB) ? 'not-allowed' : 'pointer',
-                    fontSize: '0.7rem',
-                    fontWeight: 'bold',
-                    opacity: (!objectA || !objectB || objectA === objectB) ? 0.6 : 1
-                  }}
-                  title="Place Object 1 below Object 2"
-                >
-                  ⬇️ 1 Below 2
-                </button>
-              </div>
-            </div>
           </div>
         </div>
       )}
@@ -689,25 +466,84 @@ const AIPanel = ({ onAIEdit, isLoading, canvasObjects, onBringToFront, onSendToB
 
                   {/* Layer name */}
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ 
-                      fontWeight: isSelected ? '700' : '500',
-                      fontSize: '0.9rem',
-                      whiteSpace: 'nowrap',
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                      color: isSelected ? '#ffffff' : '#374151',
-                      letterSpacing: '0.01em'
-                    }}>
-                      {obj.type === 'path' && 'Drawing'}
-                      {obj.type === 'rect' && 'Rectangle'}
-                      {obj.type === 'circle' && 'Circle'}
-                      {obj.type === 'triangle' && 'Triangle'}
-                      {obj.type === 'line' && 'Line'}
-                      {obj.type === 'i-text' && 'Text'}
-                      {obj.type === 'image' && 'Image'}
-                      {obj.type === 'group' && 'Group'}
-                      {!['path', 'rect', 'circle', 'triangle', 'line', 'i-text', 'image', 'group'].includes(obj.type) && obj.type}
-                    </div>
+                    {editingLayerId === obj.id ? (
+                      <input
+                        type="text"
+                        value={editingLayerName}
+                        onChange={(e) => setEditingLayerName(e.target.value)}
+                        onBlur={finishRenaming}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') finishRenaming()
+                          if (e.key === 'Escape') cancelRenaming()
+                        }}
+                        autoFocus
+                        onClick={(e) => e.stopPropagation()}
+                        style={{
+                          width: '100%',
+                          padding: '0.25rem 0.5rem',
+                          fontSize: '0.9rem',
+                          fontWeight: '500',
+                          border: '2px solid #667eea',
+                          borderRadius: '4px',
+                          background: 'white',
+                          color: '#374151',
+                          outline: 'none'
+                        }}
+                      />
+                    ) : (
+                      <div 
+                        style={{ 
+                          fontWeight: isSelected ? '700' : '500',
+                          fontSize: '0.9rem',
+                          whiteSpace: 'nowrap',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          color: isSelected ? '#ffffff' : '#374151',
+                          letterSpacing: '0.01em',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '0.5rem'
+                        }}
+                        onDoubleClick={(e) => {
+                          e.stopPropagation()
+                          startRenaming(obj)
+                        }}
+                        title="Double-click to rename"
+                      >
+                        <span style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                          {obj.name || (obj.type === 'path' && 'Drawing') ||
+                           (obj.type === 'rect' && 'Rectangle') ||
+                           (obj.type === 'circle' && 'Circle') ||
+                           (obj.type === 'triangle' && 'Triangle') ||
+                           (obj.type === 'line' && 'Line') ||
+                           (obj.type === 'i-text' && 'Text') ||
+                           (obj.type === 'image' && 'Image') ||
+                           (obj.type === 'group' && 'Group') ||
+                           obj.type}
+                        </span>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            startRenaming(obj)
+                          }}
+                          style={{
+                            background: 'none',
+                            border: 'none',
+                            cursor: 'pointer',
+                            padding: '0.25rem',
+                            fontSize: '0.75rem',
+                            color: isSelected ? 'rgba(255, 255, 255, 0.8)' : '#667eea',
+                            opacity: 0.7,
+                            transition: 'opacity 0.2s'
+                          }}
+                          onMouseEnter={(e) => e.target.style.opacity = 1}
+                          onMouseLeave={(e) => e.target.style.opacity = 0.7}
+                          title="Rename layer"
+                        >
+                          🏷️
+                        </button>
+                      </div>
+                    )}
                   </div>
 
                   {/* Effects indicator (optional) */}
@@ -761,6 +597,114 @@ const AIPanel = ({ onAIEdit, isLoading, canvasObjects, onBringToFront, onSendToB
             )}
           </div>
       </div>
+
+      <div className="tool-group">
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+          <h3>💡 Quick Prompts</h3>
+          <button
+            onClick={() => setShowAdvanced(!showAdvanced)}
+            style={{
+              background: 'none',
+              border: 'none',
+              cursor: 'pointer',
+              fontSize: '0.8rem',
+              color: '#007bff'
+            }}
+          >
+            {showAdvanced ? 'Simple' : 'Advanced'}
+          </button>
+        </div>
+        
+        {showAdvanced ? (
+          Object.entries(promptCategories).map(([category, prompts]) => (
+            <div key={category} style={{ marginBottom: '1rem' }}>
+              <h4 style={{ fontSize: '0.8rem', color: '#666', marginBottom: '0.25rem' }}>
+                {category}
+              </h4>
+              <div>
+                {prompts.map((suggestion, index) => (
+                  <button
+                    key={index}
+                    className="tool-btn"
+                    onClick={() => setPrompt(suggestion)}
+                    disabled={isLoading}
+                    style={{ 
+                      width: '100%', 
+                      marginBottom: '0.25rem', 
+                      textAlign: 'left',
+                      fontSize: '0.75rem',
+                      padding: '0.4rem 0.6rem'
+                    }}
+                  >
+                    {suggestion}
+                  </button>
+                ))}
+              </div>
+            </div>
+          ))
+        ) : (
+          <div className="tool-buttons">
+            {Object.values(promptCategories).flat().slice(0, 6).map((suggestion, index) => (
+              <button
+                key={index}
+                className="tool-btn"
+                onClick={() => setPrompt(suggestion)}
+                disabled={isLoading}
+                style={{ width: '100%', marginBottom: '0.25rem', textAlign: 'left' }}
+              >
+                {suggestion}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {history.length > 0 && (
+        <div className="tool-group">
+          <h3>📝 Recent Prompts</h3>
+          <div style={{ maxHeight: '200px', overflowY: 'auto' }}>
+            {history.map((entry) => (
+              <div
+                key={entry.id}
+                style={{
+                  padding: '0.5rem',
+                  margin: '0.25rem 0',
+                  background: '#f8f9fa',
+                  borderRadius: '4px',
+                  cursor: 'pointer',
+                  fontSize: '0.8rem',
+                  border: '1px solid #e9ecef'
+                }}
+                onClick={() => useHistoryPrompt(entry.originalPrompt || entry.prompt)}
+                title="Click to use this prompt"
+              >
+                <div style={{ 
+                  display: 'flex', 
+                  justifyContent: 'space-between', 
+                  alignItems: 'center',
+                  marginBottom: '0.25rem' 
+                }}>
+                  <span style={{ fontWeight: 'bold', fontSize: '0.7rem' }}>
+                    {entry.timestamp}
+                  </span>
+                  {entry.style && (
+                    <span style={{ 
+                      background: '#007bff', 
+                      color: 'white', 
+                      padding: '0.1rem 0.3rem', 
+                      borderRadius: '2px',
+                      fontSize: '0.6rem'
+                    }}>
+                      {stylePresets.find(s => s.id === entry.style)?.name}
+                    </span>
+                  )}
+                </div>
+                <div>{entry.originalPrompt || entry.prompt}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className="tool-group">
         <h3>💡 Tips</h3>
