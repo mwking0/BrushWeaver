@@ -1,12 +1,28 @@
+import React, { useState, useEffect } from 'react'
+import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate } from 'react-router-dom'
+import LandingPage from './components/LandingPage'
+import Login from './components/Auth/Login'
+import Signup from './components/Auth/Signup'
 import DrawingEditor from './components/DrawingEditor'
 
-function App() {
+// Protected Route Component
+const ProtectedRoute = ({ children, user }) => {
+  if (!user) {
+    return <Navigate to="/login" replace />
+  }
+  return children
+}
+
+// Editor Page with Header
+const EditorPage = ({ user, onLogout }) => {
+  const navigate = useNavigate()
+
   return (
     <div className="app">
       <header className="header">
         <div className="header-content">
           <div className="header-left">
-            <div className="logo-section">
+            <div className="logo-section" style={{ cursor: 'pointer' }} onClick={() => navigate('/')}>
               <div className="logo-icon">
                 <svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
                   <defs>
@@ -49,6 +65,16 @@ function App() {
           </div>
           
           <div className="header-right">
+            {user && (
+              <div className="user-menu">
+                <span className="user-name">👋 {user.name}</span>
+                <button className="header-btn" onClick={onLogout} title="Logout">
+                  <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M3 3a1 1 0 00-1 1v12a1 1 0 001 1h12a1 1 0 001-1V4a1 1 0 00-1-1H3zm11 4.414l-4.293 4.293a1 1 0 01-1.414 0L4 7.414 5.414 6l3.293 3.293L13.586 6 15 7.414z" clipRule="evenodd"/>
+                  </svg>
+                </button>
+              </div>
+            )}
             <button className="header-btn help-btn" title="Help & Shortcuts">
               <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
                 <path d="M10 0C4.477 0 0 4.477 0 10s4.477 10 10 10 10-4.477 10-10S15.523 0 10 0zm1 15H9v-2h2v2zm0-4H9V5h2v6z"/>
@@ -66,6 +92,47 @@ function App() {
         <DrawingEditor />
       </main>
     </div>
+  )
+}
+
+function App() {
+  const [user, setUser] = useState(null)
+
+  useEffect(() => {
+    // Check if user is logged in
+    const savedUser = localStorage.getItem('user')
+    if (savedUser) {
+      setUser(JSON.parse(savedUser))
+    }
+  }, [])
+
+  const handleLogin = (userData) => {
+    setUser(userData)
+  }
+
+  const handleLogout = () => {
+    localStorage.removeItem('user')
+    setUser(null)
+    window.location.href = '/'
+  }
+
+  return (
+    <Router>
+      <Routes>
+        <Route path="/" element={<LandingPage />} />
+        <Route path="/login" element={<Login onLogin={handleLogin} />} />
+        <Route path="/signup" element={<Signup onLogin={handleLogin} />} />
+        <Route 
+          path="/editor" 
+          element={
+            <ProtectedRoute user={user}>
+              <EditorPage user={user} onLogout={handleLogout} />
+            </ProtectedRoute>
+          } 
+        />
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </Router>
   )
 }
 
