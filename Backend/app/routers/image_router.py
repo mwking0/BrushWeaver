@@ -78,6 +78,7 @@ async def edit_image(
     try:
         img = Image.open(BytesIO(data))
         img.load()
+        print(f"📥 RECEIVED image: {img.size[0]}x{img.size[1]} ({img.mode})")
     except Exception:
         raise HTTPException(400, "Invalid or corrupted image")
     
@@ -101,11 +102,15 @@ async def edit_image(
     out_fmt = image_service.pick_output_format(format, file.content_type)
     img = image_service.ensure_mode_for_format(img, out_fmt)
     
+    print(f"📤 SENDING image: {img.size[0]}x{img.size[1]} ({img.mode}) as {out_fmt}")
+    
     buf = BytesIO()
     save_kwargs = {}
     if out_fmt in ("jpeg", "webp"):
         save_kwargs["quality"] = quality
     img.save(buf, format=out_fmt.upper(), **save_kwargs)
+    
+    print(f"📤 Output buffer size: {buf.tell()} bytes")
     
     # Prepare response headers
     headers = {"Content-Disposition": f'inline; filename="edited.{out_fmt}"'}

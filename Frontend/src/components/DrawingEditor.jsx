@@ -632,7 +632,7 @@ const DrawingEditor = () => {
       case 'eraser':
         canvas.isDrawingMode = false
         canvas.selection = false
-        canvas.evented = false // Disable all Fabric.js events for custom eraser
+        canvas.evented = false
         canvas.defaultCursor = 'crosshair'
         canvas.hoverCursor = 'crosshair'
         setIsErasing(true)
@@ -666,74 +666,76 @@ const DrawingEditor = () => {
     }
   }, [canvas, activeTool, brushSize, brushColor])
 
-  // Handle pixel-based eraser functionality using native DOM events
+  // Pixel-level eraser using canvas context manipulation
   useEffect(() => {
-    if (!canvas || !isErasing || !canvas.upperCanvasEl) return
+    if (!canvas || !isErasing) return
 
-    const canvasElement = canvas.upperCanvasEl
+    let isDrawing = false
+    let lastX = 0
+    let lastY = 0
 
-    const getCanvasCoordinates = (e) => {
-      const rect = canvasElement.getBoundingClientRect()
-      return {
-        x: e.clientX - rect.left,
-        y: e.clientY - rect.top
-      }
+    const erasePixels = (x, y) => {
+      const ctx = canvas.getContext('2d')
+      ctx.save()
+      ctx.globalCompositeOperation = 'destination-out'
+      ctx.beginPath()
+      ctx.arc(x, y, brushSize / 2, 0, Math.PI * 2)
+      ctx.fill()
+      ctx.restore()
     }
 
-    const eraseAtPoint = (x, y) => {
-      // Get the underlying HTML5 canvas context
-      const ctx = canvas.getContext()
-      
-      // Save current state
+    const eraseLine = (x1, y1, x2, y2) => {
+      const ctx = canvas.getContext('2d')
       ctx.save()
-      
-      // Set composite operation to erase pixels
       ctx.globalCompositeOperation = 'destination-out'
-      
-      // Draw a circle at the pointer location to erase pixels
+      ctx.lineWidth = brushSize
+      ctx.lineCap = 'round'
+      ctx.lineJoin = 'round'
       ctx.beginPath()
-      ctx.arc(x, y, Math.max(brushSize * 1.5, 10) / 2, 0, 2 * Math.PI)
-      ctx.fill()
-      
-      // Restore state
+      ctx.moveTo(x1, y1)
+      ctx.lineTo(x2, y2)
+      ctx.stroke()
       ctx.restore()
-      
-      // Re-render the canvas
+    }
+
+    const handleMouseDown = (opt) => {
+      isDrawing = true
+      const pointer = canvas.getPointer(opt.e)
+      lastX = pointer.x
+      lastY = pointer.y
+      erasePixels(pointer.x, pointer.y)
       canvas.renderAll()
     }
 
-    const handleMouseDown = (e) => {
-      e.preventDefault()
-      setIsMouseDown(true)
-      const coords = getCanvasCoordinates(e)
-      eraseAtPoint(coords.x, coords.y)
+    const handleMouseMove = (opt) => {
+      if (!isDrawing) return
+      const pointer = canvas.getPointer(opt.e)
+      eraseLine(lastX, lastY, pointer.x, pointer.y)
+      lastX = pointer.x
+      lastY = pointer.y
+      canvas.renderAll()
     }
 
-    const handleMouseMove = (e) => {
-      if (!isMouseDown) return
-      e.preventDefault()
-      const coords = getCanvasCoordinates(e)
-      eraseAtPoint(coords.x, coords.y)
+    const handleMouseUp = () => {
+      if (isDrawing) {
+        isDrawing = false
+        // Save state after erasing
+        setTimeout(() => saveState(canvas), 50)
+      }
     }
 
-    const handleMouseUp = (e) => {
-      e.preventDefault()
-      setIsMouseDown(false)
-    }
-
-    // Add native DOM event listeners
-    canvasElement.addEventListener('mousedown', handleMouseDown)
-    canvasElement.addEventListener('mousemove', handleMouseMove)
-    canvasElement.addEventListener('mouseup', handleMouseUp)
-    canvasElement.addEventListener('mouseleave', handleMouseUp) // Stop erasing when mouse leaves canvas
+    canvas.on('mouse:down', handleMouseDown)
+    canvas.on('mouse:move', handleMouseMove)
+    canvas.on('mouse:up', handleMouseUp)
 
     return () => {
-      canvasElement.removeEventListener('mousedown', handleMouseDown)
-      canvasElement.removeEventListener('mousemove', handleMouseMove)
-      canvasElement.removeEventListener('mouseup', handleMouseUp)
-      canvasElement.removeEventListener('mouseleave', handleMouseUp)
+      canvas.off('mouse:down', handleMouseDown)
+      canvas.off('mouse:move', handleMouseMove)
+      canvas.off('mouse:up', handleMouseUp)
     }
-  }, [canvas, isErasing, isMouseDown, brushSize])
+  }, [canvas, isErasing, brushSize])
+
+
 
 
 
@@ -1615,6 +1617,24 @@ const DrawingEditor = () => {
       const response = await fetch(imageDataUrl)
       const blob = await response.blob()
       
+      // Log the image being sent
+      console.log('📤 SENDING to backend:', {
+        canvasSize: { width: canvas.width, height: canvas.height },
+        blobSize: blob.size,
+        blobType: blob.type
+      })
+      
+      // Create a temporary image to check actual dimensions
+      const tempImg = new Image()
+      tempImg.src = imageDataUrl
+      await new Promise(resolve => tempImg.onload = resolve)
+      console.log('📤 Image dimensions being sent:', {
+        width: tempImg.width,
+        height: tempImg.height,
+        naturalWidth: tempImg.naturalWidth,
+        naturalHeight: tempImg.naturalHeight
+      })
+      
       // Create form data
       const formData = new FormData()
       formData.append('file', blob, 'drawing.png')
@@ -1630,10 +1650,23 @@ const DrawingEditor = () => {
 
       if (editResponse.ok) {
         const editedImageBlob = await editResponse.blob()
-        console.log('📦 Received AI-edited image blob:', {
-          size: editedImageBlob.size,
-          type: editedImageBlob.type
+        console.log('📥 RECEIVED from backend:', {
+          blobSize: editedImageBlob.size,
+          blobType: editedImageBlob.type
         })
+        
+        // Check the actual dimensions of the returned image
+        const returnedImageUrl = URL.createObjectURL(editedImageBlob)
+        const returnedImg = new Image()
+        returnedImg.src = returnedImageUrl
+        await new Promise(resolve => returnedImg.onload = resolve)
+        console.log('📥 Image dimensions received:', {
+          width: returnedImg.width,
+          height: returnedImg.height,
+          naturalWidth: returnedImg.naturalWidth,
+          naturalHeight: returnedImg.naturalHeight
+        })
+        URL.revokeObjectURL(returnedImageUrl)
         
         const editedImageUrl = URL.createObjectURL(editedImageBlob)
         blobUrlsRef.current.push(editedImageUrl) // Track for cleanup

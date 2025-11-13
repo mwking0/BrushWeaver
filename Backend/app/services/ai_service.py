@@ -62,6 +62,7 @@ class AIService:
         """
         try:
             pil_image = Image.open(BytesIO(image_data))
+            print(f"🖼️ Input image to AI: {pil_image.size[0]}x{pil_image.size[1]} ({pil_image.mode})")
             
             # Use image generation ONLY (Approach A)
             if not self.generation_model:
@@ -195,6 +196,13 @@ Instructions:
                         continue
             
             if generated_bytes and len(generated_bytes) > 0:
+                # Check the dimensions of the generated image
+                try:
+                    generated_img = Image.open(BytesIO(generated_bytes))
+                    print(f"🎨 AI generated image: {generated_img.size[0]}x{generated_img.size[1]} ({generated_img.mode})")
+                except Exception as e:
+                    print(f"⚠️ Could not read generated image dimensions: {e}")
+                
                 return generated_bytes, f"AI-generated with {self.generation_model._model_name}"
             else:
                 print("❌ No valid image data found in any part")
