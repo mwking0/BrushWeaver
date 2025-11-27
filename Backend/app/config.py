@@ -35,12 +35,14 @@ class Settings:
     MAX_IMAGE_DIMENSION: int = 8000
     
     # AI Model Configuration
-    ANALYSIS_MODEL: str = "gemini-2.5-flash"
+    # Models that support IMAGE response modality for image generation
+    ANALYSIS_MODEL: str = "gemini-1.5-flash"
     IMAGE_GENERATION_MODELS: list[str] = [
-        'gemini-2.0-flash-preview-image-generation',
-        'gemini-2.5-flash-image',
-        'gemini-2.0-flash-exp-image-generation',
-        'gemini-2.5-flash-image-preview',
+        'gemini-2.5-flash-image',         # Dedicated image generation model
+        'gemini-2.5-flash-image-preview', # Preview image generation model
+        'gemini-2.0-flash-exp',           # Experimental with IMAGE modality
+        'gemini-1.5-flash-latest',        # Latest flash with IMAGE modality
+        'gemini-1.5-flash',               # Stable flash with IMAGE modality
     ]
     
     # Default Image Processing

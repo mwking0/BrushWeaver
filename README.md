@@ -1,211 +1,240 @@
-# 🎨 BrushWeaver - Personal AI Image Editor
+# 🎨 BrushWeaver
 
-My personal web-based image editor that combines intuitive drawing tools with AI-powered image enhancement using Google's Gemini 2.5 Flash.
+**AI-Powered Creative Studio** - Draw, design, and transform your ideas into reality with the power of artificial intelligence.
+
+![BrushWeaver](https://img.shields.io/badge/version-1.0.0-blue)
+![License](https://img.shields.io/badge/license-MIT-green)
+![React](https://img.shields.io/badge/React-18.3-61dafb)
+![Python](https://img.shields.io/badge/Python-3.11-3776ab)
 
 ## ✨ Features
 
-### 🖌️ Drawing & Editing Tools
-- **Freehand Drawing** - Smooth brush strokes with pressure sensitivity
-- **Shape Tools** - Rectangles, circles, lines with customizable properties
-- **Text Tool** - Add and edit text with various fonts and styles
-- **Selection Tools** - Move, resize, and transform objects
-- **Layers System** - Organize your artwork with multiple layers
-- **Undo/Redo** - Comprehensive history management
-- **Zoom & Pan** - Navigate large canvases with ease
+### 🖌️ **Professional Drawing Tools**
+- Pen, eraser, shapes, text, and line tools
+- Customizable brush sizes and colors
+- Text formatting (font, size, color, alignment)
+- Shape tools (rectangle, circle, triangle)
 
-### 🤖 AI-Powered Enhancement
-- **Intelligent Analysis** - Gemini 2.5 Flash analyzes your images
-- **Style Transformation** - Convert to watercolor, vintage, modern styles
-- **Logo Creation** - Transform drawings into professional logos
-- **Color Enhancement** - Smart color adjustments and corrections
-- **Quality Improvement** - Sharpen, brighten, and enhance images
-- **Creative Suggestions** - AI-guided editing recommendations
+### 🤖 **AI-Powered Editing**
+- Transform drawings with AI prompts
+- Style presets (watercolor, oil painting, anime, etc.)
+- Multiple processing modes (replace, layer, selection)
+- Powered by Google Gemini 2.5 Flash Image
 
-### 🎯 Advanced Features
-- **Object Grouping** - Merge and organize canvas elements
-- **Keyboard Shortcuts** - Efficient workflow with hotkeys
-- **Export Options** - Save in multiple formats (PNG, JPEG, WebP)
-- **Responsive Design** - Works on desktop and tablet devices
-- **Real-time Preview** - See changes instantly
+### 📐 **Layer Management**
+- Create, rename, and reorder layers
+- Drag-and-drop layer organization
+- Layer visibility controls
+- Group/ungroup objects
 
-## 🏗️ Architecture
+### ⚡ **Advanced Features**
+- Undo/Redo with full history
+- Zoom and pan controls
+- Grid overlay
+- Multi-selection (Ctrl+click)
+- Keyboard shortcuts
+- Save/Load projects
+- Export (PNG, JPEG, SVG)
 
-```
-┌─────────────────┐    ┌──────────────────┐    ┌─────────────────────────────┐
-│   FRONTEND      │    │   FASTAPI        │    │     GOOGLE GEMINI API       │
-│   (React)       │◄──►│   BACKEND        │◄──►│                             │
-│                 │    │                  │    │  • Image Analysis           │
-│ • Canvas        │    │ • Image Upload   │    │  • Text Instructions        │
-│ • AI Panel      │    │ • AI Processing  │    │  • Editing Guidance         │
-│ • Toolbar       │    │ • Image Editing  │    │  • Technical Parameters     │
-└─────────────────┘    └──────────────────┘    └─────────────────────────────┘
-```
+### 🔐 **User Authentication**
+- Beautiful landing page
+- Sign up / Login system
+- Protected routes
+- Session management
 
 ## 🚀 Quick Start
 
 ### Prerequisites
-- **Node.js** 16+ and npm
-- **Python** 3.8+
-- **Google Gemini API Key** ([Get one here](https://aistudio.google.com/app/apikey))
 
-### 1. Clone the Repository
+- **Node.js** 18+ and npm
+- **Python** 3.11+
+- **Gemini API Key** (Get it from [Google AI Studio](https://makersuite.google.com/app/apikey))
+
+### Installation
+
+1. **Clone the repository**
 ```bash
 git clone https://github.com/yourusername/brushweaver.git
 cd brushweaver
 ```
 
-### 2. Backend Setup
+2. **Setup Backend**
 ```bash
-cd Backend/app
-
-# Install Python dependencies
+cd Backend
 pip install -r requirements.txt
-
-# Configure environment variables
+cd app
 cp .env.example .env
-# Edit .env and add your Gemini API key
-
-# Start the backend server
-python main.py
+# Edit .env and add your GEMINI_API_KEY
 ```
 
-The backend will be available at `http://localhost:8000`
-
-### 3. Frontend Setup
+3. **Setup Frontend**
 ```bash
 cd Frontend
-
-# Install Node.js dependencies
 npm install
+```
 
-# Start the development server
+4. **Run the Application**
+
+Terminal 1 (Backend):
+```bash
+cd Backend/app
+python -m uvicorn main:app --reload --port 8000
+```
+
+Terminal 2 (Frontend):
+```bash
+cd Frontend
 npm run dev
 ```
 
-The frontend will be available at `http://localhost:5173`
+5. **Open your browser**
+- Frontend: http://localhost:3000/
+- Backend API: http://localhost:8000/
 
-## 📖 Documentation
+## 📖 Usage
 
-- [Backend API Documentation](Backend/README.md)
-- [Frontend Development Guide](Frontend/README.md)
-- [Architecture Overview](Backend/app/architecture_overview.md)
-- [API Reference](http://localhost:8000/docs) (when backend is running)
+### Getting Started
+
+1. **Visit the Landing Page** at http://localhost:3000/
+2. **Sign Up** with any email and password (mock auth for now)
+3. **Start Drawing** with the intuitive tools
+4. **Use AI** to transform your artwork with natural language prompts
+
+### AI Prompts Examples
+
+- "Make it look like a watercolor painting"
+- "Add a sunset background"
+- "Convert to anime style"
+- "Make it more colorful and vibrant"
+- "Apply oil painting effect"
+
+### Keyboard Shortcuts
+
+- **Ctrl+Z** - Undo
+- **Ctrl+Y** - Redo
+- **Delete** - Delete selected objects
+- **Ctrl+G** - Group objects
+- **Ctrl+Shift+G** - Ungroup
+- **G** - Toggle grid
+- **Ctrl+0** - Reset zoom
+- **P** - Pen tool
+- **V** - Select tool
+- **E** - Eraser tool
+- **T** - Text tool
+- **L** - Line tool
+
+## 🏗️ Architecture
+
+### Backend (FastAPI + Python)
+
+```
+Backend/app/
+├── main.py                 # Application entry point
+├── config.py              # Configuration and settings
+├── models.py              # Pydantic models
+├── services/              # Business logic
+│   ├── ai_service.py      # AI operations (Gemini)
+│   └── image_service.py   # Image processing
+└── routers/               # API endpoints
+    ├── health_router.py   # Health checks
+    └── image_router.py    # Image editing
+```
+
+### Frontend (React + Vite)
+
+```
+Frontend/src/
+├── App.jsx                # Main app with routing
+├── components/
+│   ├── LandingPage.jsx    # Landing page
+│   ├── DrawingEditor.jsx  # Main editor
+│   ├── Toolbar.jsx        # Drawing tools
+│   ├── AIPanel.jsx        # AI controls & layers
+│   └── Auth/              # Authentication
+│       ├── Login.jsx
+│       └── Signup.jsx
+└── index.css              # Styles
+```
 
 ## 🔧 Configuration
 
-### Environment Variables
+### Backend Configuration
 
-Create a `.env` file in `Backend/app/` with:
+Edit `Backend/app/.env`:
 
 ```env
-# Required: Google Gemini API Key
-GEMINI_API_KEY=your_gemini_api_key_here
-
-# Optional: OpenAI API Key (for additional features)
-OPENAI_API_KEY=your_openai_api_key_here
+GEMINI_API_KEY=your_api_key_here
 ```
 
-### API Keys Setup
+### Frontend Configuration
 
-1. **Gemini API Key**:
-   - Visit [Google AI Studio](https://aistudio.google.com/app/apikey)
-   - Sign in with your Google account
-   - Create a new API key
-   - Copy and paste it into your `.env` file
+The frontend automatically connects to `http://localhost:8000` for the backend API.
 
-2. **OpenAI API Key** (Optional):
-   - Visit [OpenAI Platform](https://platform.openai.com/api-keys)
-   - Create an account and generate an API key
-   - Add it to your `.env` file
+## 📚 API Documentation
 
-## 🎮 Usage
+Once the backend is running, visit:
+- **Swagger UI**: http://localhost:8000/docs
+- **ReDoc**: http://localhost:8000/redoc
 
-### Basic Drawing
-1. Select a drawing tool from the toolbar
-2. Choose colors, brush size, and other properties
-3. Draw on the canvas
-4. Use Ctrl+Z/Ctrl+Y for undo/redo
+### Main Endpoints
 
-### AI Enhancement
-1. Draw or upload an image
-2. Open the AI Panel on the right
-3. Enter a prompt like "make this more colorful" or "turn into a logo"
-4. Click "Weave with AI" to apply enhancements
-5. View the enhanced result on your canvas
+- `POST /edit` - Edit image with AI
+- `GET /healthz` - Health check
+- `GET /test-gemini` - Test Gemini connection
+- `GET /list-models` - List available AI models
 
-### Keyboard Shortcuts
-- `Ctrl+Z` - Undo
-- `Ctrl+Y` - Redo
-- `Ctrl+0` - Reset zoom
-- `G` - Toggle grid
-- `Delete` - Delete selected objects
-- `Ctrl+A` - Select all
-- `Escape` - Deselect all
+## 🤝 Contributing
 
-## 🛠️ Development
+Contributions are welcome! Please feel free to submit a Pull Request.
 
-### Project Structure
-```
-brushweaver/
-├── Frontend/                 # React frontend application
-│   ├── src/
-│   │   ├── components/      # React components
-│   │   ├── hooks/          # Custom React hooks
-│   │   └── utils/          # Utility functions
-│   └── package.json
-├── Backend/                 # FastAPI backend application
-│   └── app/
-│       ├── main.py         # Main FastAPI application
-│       ├── requirements.txt # Python dependencies
-│       └── .env.example    # Environment variables template
-└── README.md
-```
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
 
-### Adding New Features
-
-1. **Frontend**: Add React components in `Frontend/src/components/`
-2. **Backend**: Extend the FastAPI app in `Backend/app/main.py`
-3. **AI Features**: Modify the AI processing pipeline in `_edit_with_ai()`
-
-### Testing
-
-```bash
-# Backend tests
-cd Backend/app
-python test_simplified_system.py
-
-# Frontend tests
-cd Frontend
-npm test
-```
-
-## 📝 Development Notes
-
-This is a personal project. For development:
-1. Create feature branches for major changes
-2. Test thoroughly before merging to main
-3. Keep documentation updated
-
-## 📄 License
+## 📝 License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ## 🙏 Acknowledgments
 
-- **Google Gemini** - For powerful AI image analysis
-- **FastAPI** - For the robust backend framework
-- **React** - For the interactive frontend
-- **Fabric.js** - For canvas manipulation
-- **PIL/Pillow** - For image processing
+- **Google Gemini** for AI capabilities
+- **Fabric.js** for canvas manipulation
+- **FastAPI** for the backend framework
+- **React** for the frontend framework
+- **Vite** for blazing fast development
 
-## 📝 Notes
+## 📧 Contact
 
-Personal project for learning and experimentation with:
-- React and modern frontend development
-- FastAPI and Python backend development  
-- AI integration with Google Gemini
-- Canvas manipulation and image processing
+Your Name - [@yourtwitter](https://twitter.com/yourtwitter)
+
+Project Link: [https://github.com/yourusername/brushweaver](https://github.com/yourusername/brushweaver)
+
+## 🗺️ Roadmap
+
+- [ ] Real backend authentication (JWT)
+- [ ] Database integration for user accounts
+- [ ] Cloud storage for projects
+- [ ] More AI models (Stable Diffusion, DALL-E)
+- [ ] Collaborative editing
+- [ ] Mobile app
+- [ ] Plugin system
+- [ ] Template library
+
+## 🐛 Known Issues
+
+- Authentication is currently mock-based (localStorage only)
+- AI image generation requires Gemini API quota
+- Some features require modern browsers
+
+## 💡 Tips
+
+- Use the AI with specific, descriptive prompts for best results
+- Save your work frequently using Ctrl+S
+- Experiment with different style presets
+- Use layers to organize complex drawings
 
 ---
 
-Built with ❤️ using React, FastAPI, and Google Gemini AI
+Made with ❤️ by [Your Name]

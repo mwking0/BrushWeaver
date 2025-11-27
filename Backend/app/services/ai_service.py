@@ -24,19 +24,26 @@ class AIService:
         
         genai.configure(api_key=settings.GEMINI_API_KEY)
         
-        # Initialize image generation model ONLY (Approach A)
+        # Initialize image generation model with IMAGE response modality
         for model_name in settings.IMAGE_GENERATION_MODELS:
             try:
+                # Try with IMAGE response modality for image generation
                 self.generation_model = genai.GenerativeModel(
                     model_name=model_name,
-                    generation_config={"response_modalities": ["TEXT", "IMAGE"]}
+                    generation_config={"response_modalities": ["IMAGE"]}
                 )
-                print(f"🎨 Initialized {model_name} for AI image generation")
-                print("✨ Using ONLY Image Generation approach (Approach A)")
+                print(f"🎨 Initialized {model_name} with IMAGE generation capability")
+                print("✨ Using Gemini IMAGE response modality for image generation")
                 break
             except Exception as e:
-                print(f"⚠️ {model_name} not available: {e}")
-                continue
+                print(f"⚠️ {model_name} not available with IMAGE modality: {e}")
+                # Try without IMAGE modality as fallback
+                try:
+                    self.generation_model = genai.GenerativeModel(model_name=model_name)
+                    print(f"🎨 Initialized {model_name} (fallback mode)")
+                    break
+                except:
+                    continue
         
         if not self.generation_model:
             print("❌ No image generation models available - AI editing will not work")
