@@ -1,5 +1,17 @@
 import React from 'react'
 import { useNavigate } from 'react-router-dom'
+import {
+  Palette,
+  Sparkles,
+  Image as ImageIcon,
+  Layers,
+  Zap,
+  Download,
+  ArrowRight,
+  Brush,
+  Wand2,
+  Share2
+} from 'lucide-react'
 
 const LandingPage = () => {
   const navigate = useNavigate()
@@ -13,57 +25,90 @@ const LandingPage = () => {
             <span className="badge-dot"></span>
             <span>AI-Powered Creative Studio</span>
           </div>
-          
+
           <h1 className="hero-title">
             Create Stunning Art with
             <span className="gradient-text"> AI Magic</span>
           </h1>
-          
+
           <p className="hero-description">
-            Draw, design, and transform your ideas into reality with the power of artificial intelligence. 
-            BrushWeaver combines intuitive drawing tools with cutting-edge AI to bring your creativity to life.
+            Draw, design, and transform your ideas into reality.
+            BrushWeaver combines professional drawing tools with cutting-edge local AI to bring your creativity to life instantly.
           </p>
-          
+
           <div className="hero-buttons">
             <button className="btn btn-primary" onClick={() => navigate('/signup')}>
               Get Started Free
-              <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
-                <path d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z"/>
-              </svg>
+              <ArrowRight size={20} />
             </button>
             <button className="btn btn-secondary" onClick={() => navigate('/login')}>
               Sign In
             </button>
           </div>
-          
+
           <div className="hero-stats">
             <div className="stat">
               <div className="stat-number">∞</div>
               <div className="stat-label">Possibilities</div>
             </div>
             <div className="stat">
-              <div className="stat-number">AI</div>
-              <div className="stat-label">Powered</div>
+              <div className="stat-number">100%</div>
+              <div className="stat-label">Local AI</div>
             </div>
             <div className="stat">
               <div className="stat-number">Free</div>
-              <div className="stat-label">To Start</div>
+              <div className="stat-label">Forever</div>
             </div>
           </div>
         </div>
-        
+
+        {/* New Structure: App Interface Preview */}
         <div className="hero-visual">
-          <div className="visual-card card-1">
-            <div className="card-icon">🎨</div>
-            <div className="card-title">Draw</div>
+          <div className="app-preview-card">
+            <div className="app-header">
+              <div className="app-dots">
+                <div className="dot red"></div>
+                <div className="dot yellow"></div>
+                <div className="dot green"></div>
+              </div>
+              <div className="app-search">brushweaver.app</div>
+            </div>
+            <div className="app-body">
+              <div className="app-sidebar">
+                <div className="app-tool active"><Brush size={16} /></div>
+                <div className="app-tool"><Wand2 size={16} /></div>
+                <div className="app-tool"><Layers size={16} /></div>
+              </div>
+              <div className="app-canvas">
+                <div className="floating-element circle"></div>
+                <div className="floating-element square"></div>
+                <div className="ai-processing-badge">
+                  <Sparkles size={14} className="spin" />
+                  Generating...
+                </div>
+              </div>
+              <div className="app-panels">
+                <div className="panel-item"></div>
+                <div className="panel-item"></div>
+                <div className="panel-item short"></div>
+              </div>
+            </div>
           </div>
-          <div className="visual-card card-2">
-            <div className="card-icon">✨</div>
-            <div className="card-title">AI Transform</div>
+
+          {/* Floating Feature Cards */}
+          <div className="visual-card-floating card-1">
+            <div className="card-icon"><Palette size={24} /></div>
+            <div className="card-text">
+              <span className="card-label">Tools</span>
+              <span className="card-value">Professional</span>
+            </div>
           </div>
-          <div className="visual-card card-3">
-            <div className="card-icon">🖼️</div>
-            <div className="card-title">Export</div>
+          <div className="visual-card-floating card-2">
+            <div className="card-icon"><Sparkles size={24} /></div>
+            <div className="card-text">
+              <span className="card-label">AI Model</span>
+              <span className="card-value">Qwen Edit</span>
+            </div>
           </div>
         </div>
       </section>
@@ -74,50 +119,62 @@ const LandingPage = () => {
           <h2 className="section-title">Powerful Features</h2>
           <p className="section-description">Everything you need to create amazing artwork</p>
         </div>
-        
+
         <div className="features-grid">
           <div className="feature-card">
-            <div className="feature-icon">🖌️</div>
-            <h3 className="feature-title">Professional Drawing Tools</h3>
+            <div className="feature-icon">
+              <Brush size={40} strokeWidth={1.5} />
+            </div>
+            <h3 className="feature-title">Professional Tools</h3>
             <p className="feature-description">
               Pen, eraser, shapes, text, and more. Everything you need to bring your ideas to life.
             </p>
           </div>
-          
+
           <div className="feature-card">
-            <div className="feature-icon">🤖</div>
+            <div className="feature-icon">
+              <Wand2 size={40} strokeWidth={1.5} />
+            </div>
             <h3 className="feature-title">AI-Powered Editing</h3>
             <p className="feature-description">
               Transform your drawings with AI. Just describe what you want and watch the magic happen.
             </p>
           </div>
-          
+
           <div className="feature-card">
-            <div className="feature-icon">🎭</div>
+            <div className="feature-icon">
+              <Palette size={40} strokeWidth={1.5} />
+            </div>
             <h3 className="feature-title">Style Presets</h3>
             <p className="feature-description">
               Apply artistic styles instantly. Watercolor, oil painting, anime, and more.
             </p>
           </div>
-          
+
           <div className="feature-card">
-            <div className="feature-icon">📐</div>
+            <div className="feature-icon">
+              <Layers size={40} strokeWidth={1.5} />
+            </div>
             <h3 className="feature-title">Layer Management</h3>
             <p className="feature-description">
               Organize your work with layers. Rename, reorder, and manage with ease.
             </p>
           </div>
-          
+
           <div className="feature-card">
-            <div className="feature-icon">⚡</div>
+            <div className="feature-icon">
+              <Zap size={40} strokeWidth={1.5} />
+            </div>
             <h3 className="feature-title">Real-time Preview</h3>
             <p className="feature-description">
-              See your changes instantly. No waiting, no loading screens.
+              See your changes instantly using local acceleration. No waiting, no loading screens.
             </p>
           </div>
-          
+
           <div className="feature-card">
-            <div className="feature-icon">💾</div>
+            <div className="feature-icon">
+              <Download size={40} strokeWidth={1.5} />
+            </div>
             <h3 className="feature-title">Export Anywhere</h3>
             <p className="feature-description">
               Save in multiple formats: PNG, JPEG, SVG. Perfect for any use case.
@@ -133,11 +190,9 @@ const LandingPage = () => {
           <p className="cta-description">
             Join thousands of artists and designers using BrushWeaver to bring their ideas to life.
           </p>
-          <button className="btn btn-primary btn-large" onClick={() => navigate('/signup')}>
+          <button className="btn btn-large" onClick={() => navigate('/signup')}>
             Start Creating Now
-            <svg width="24" height="24" viewBox="0 0 20 20" fill="currentColor">
-              <path d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z"/>
-            </svg>
+            <ArrowRight size={24} />
           </button>
         </div>
       </section>

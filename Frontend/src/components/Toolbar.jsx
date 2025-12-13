@@ -47,7 +47,7 @@ const Toolbar = ({
   const colors = [
     '#000000', '#FF0000', '#00FF00', '#0000FF',
     '#FFFF00', '#FF00FF', '#00FFFF', '#FFA500',
-    '#800080', '#FFC0CB', '#A52A2A', '#808080'
+    '#800080', '#FFC0CB'
   ]
 
   const shapes = [
@@ -96,8 +96,8 @@ const Toolbar = ({
             className="tool-btn"
             onClick={onDeleteSelected}
             disabled={!hasSelection}
-            style={{ 
-              background: hasSelection ? '#ff6b6b' : '#6c757d', 
+            style={{
+              background: hasSelection ? '#ff6b6b' : '#6c757d',
               color: 'white',
               opacity: hasSelection ? 1 : 0.6
             }}
@@ -231,7 +231,7 @@ const Toolbar = ({
         <div style={{ marginBottom: '0.5rem', fontSize: '0.8rem', color: '#666' }}>
           Current: {canvasSize.width}×{canvasSize.height}
         </div>
-        <select 
+        <select
           onChange={(e) => onSetPresetSize(e.target.value)}
           className="tool-btn"
           style={{ width: '100%', marginBottom: '0.5rem' }}
@@ -245,7 +245,7 @@ const Toolbar = ({
           ))}
           <option value="custom">Custom Size</option>
         </select>
-        
+
         {showCustomInputs && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
             <input
@@ -286,13 +286,13 @@ const Toolbar = ({
             </div>
           </div>
         )}
-        
+
         <button
           className="tool-btn"
           onClick={() => setShowCustomInputs(!showCustomInputs)}
-          style={{ 
-            width: '100%', 
-            background: showCustomInputs ? '#6c757d' : '#007bff', 
+          style={{
+            width: '100%',
+            background: showCustomInputs ? '#6c757d' : '#007bff',
             color: 'white',
             marginTop: '0.5rem'
           }}
@@ -393,9 +393,9 @@ const Toolbar = ({
             className="tool-btn"
             onClick={onMergeObjects}
             disabled={!hasMultipleSelection}
-            style={{ 
-              width: '100%', 
-              background: hasMultipleSelection ? '#17a2b8' : '#6c757d', 
+            style={{
+              width: '100%',
+              background: hasMultipleSelection ? '#17a2b8' : '#6c757d',
               color: 'white',
               opacity: hasMultipleSelection ? 1 : 0.6
             }}
@@ -407,9 +407,9 @@ const Toolbar = ({
             className="tool-btn"
             onClick={onUngroupObject}
             disabled={!hasGroupSelected}
-            style={{ 
-              width: '100%', 
-              background: hasGroupSelected ? '#ffc107' : '#6c757d', 
+            style={{
+              width: '100%',
+              background: hasGroupSelected ? '#ffc107' : '#6c757d',
               color: hasGroupSelected ? '#000' : 'white',
               opacity: hasGroupSelected ? 1 : 0.6
             }}

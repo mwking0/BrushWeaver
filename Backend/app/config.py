@@ -10,8 +10,8 @@ load_dotenv()
 class Settings:
     """Application settings"""
     
-    # API Keys
-    GEMINI_API_KEY: str = os.getenv("GEMINI_API_KEY", "")
+    # Local AI Model Configuration
+    LOCAL_MODEL_NAME: str = os.getenv("LOCAL_MODEL_NAME", "qwen-image-edit")  # Image editing model
     
     # Server Configuration
     HOST: str = "127.0.0.1"
@@ -34,16 +34,7 @@ class Settings:
     }
     MAX_IMAGE_DIMENSION: int = 8000
     
-    # AI Model Configuration
-    # Models that support IMAGE response modality for image generation
-    ANALYSIS_MODEL: str = "gemini-1.5-flash"
-    IMAGE_GENERATION_MODELS: list[str] = [
-        'gemini-2.5-flash-image',         # Dedicated image generation model
-        'gemini-2.5-flash-image-preview', # Preview image generation model
-        'gemini-2.0-flash-exp',           # Experimental with IMAGE modality
-        'gemini-1.5-flash-latest',        # Latest flash with IMAGE modality
-        'gemini-1.5-flash',               # Stable flash with IMAGE modality
-    ]
+
     
     # Default Image Processing
     DEFAULT_QUALITY: int = 90

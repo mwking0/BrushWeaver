@@ -6,8 +6,12 @@ from PIL import Image, ImageFilter
 from io import BytesIO
 from typing import Optional
 from config import settings
-from services.ai_service import ai_service
+from services.qwen_service import get_image_gen_service
 from services.image_service import image_service
+from config import settings
+
+# Initialize image generation service
+image_gen_service = get_image_gen_service(settings.LOCAL_MODEL_NAME)
 
 router = APIRouter(prefix="/edit", tags=["Image Editing"])
 
@@ -62,7 +66,7 @@ async def edit_image(
     if use_ai and prompt:
         try:
             print(f"🤖 Starting AI image generation: '{prompt}' with style: '{style}'")
-            data, ai_analysis = await ai_service.edit_image_with_ai(
+            data, ai_analysis = await image_gen_service.edit_image_with_ai(
                 data,
                 prompt,
                 file.content_type,
