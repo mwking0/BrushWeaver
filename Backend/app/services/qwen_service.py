@@ -6,8 +6,9 @@ from typing import Tuple, Optional
 from pathlib import Path
 import numpy as np
 
-# Model directory
-MODEL_DIR = Path(__file__).parent.parent.parent.parent / "qwen"
+# Model directory - can be configured via environment variable
+import os
+MODEL_DIR = Path(os.getenv("MODEL_DIR", str(Path(__file__).parent.parent.parent / "models")))
 
 
 class ImageGenerationService:
@@ -31,7 +32,8 @@ class ImageGenerationService:
             
             if not model_path.exists():
                 print(f"❌ Model not found at {model_path}")
-                print(f"📥 Please run: python qwen/setup_qwen.py")
+                print(f"📥 Please download the model to: {model_path}")
+                print(f"💡 You can download from: https://huggingface.co/Qwen/Qwen-Image-Edit-2509")
                 return
             
             print(f"🔄 Loading {self.model_name} from {model_path}...")

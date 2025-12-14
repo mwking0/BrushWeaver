@@ -19,6 +19,7 @@
 - Transform drawings with AI prompts
 - Style presets (watercolor, oil painting, anime, etc.)
 - Image-to-image editing using **Qwen Image Edit model**
+- **Background removal** with multiple AI models
 - **Optimized for editing** - preserves composition while transforming style
 - **Completely offline** - no API costs!
 
@@ -69,11 +70,16 @@ cp .env.example .env
 
 3. **Download AI Model**
 ```bash
-cd ../../qwen
-pip install -r requirements.txt
-python setup_qwen.py
+# Create models directory
+mkdir Backend/models
+
+# Install AI dependencies
+pip install diffusers transformers torch torchvision accelerate rembg[gpu]
+
+# Download Qwen Image Edit model (recommended)
+cd Backend/models
+git lfs clone https://huggingface.co/Qwen/Qwen-Image-Edit-2509 qwen-image-edit
 ```
-Choose option 1 (qwen-image-edit) - specifically designed for image editing!
 
 4. **Setup Frontend**
 ```bash
@@ -184,8 +190,11 @@ Once the backend is running, visit:
 ### Main Endpoints
 
 - `POST /edit` - Edit image with AI
+- `POST /edit/remove-background` - Remove image background
+- `GET /edit/background-removal/models` - List background removal models
 - `GET /healthz` - Health check
 - `GET /test-ai` - Test AI model connection
+- `GET /test-background-removal` - Test background removal service
 - `GET /list-models` - List available AI models
 
 ## 🤝 Contributing
@@ -213,10 +222,9 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 📚 Documentation
 
-- [Local Models Guide](LOCAL_MODELS_GUIDE.md) - Complete setup guide
-- [Image-to-Image Setup](IMAGE_TO_IMAGE_SETUP.md) - Quick start
-- [Available Models](qwen/MODELS.md) - Model comparison
+- [Quick Start Guide](QUICK_START.md) - Get up and running in 5 minutes
 - [Setup Auth](SETUP_AUTH.md) - Authentication documentation
+- [Contributing](CONTRIBUTING.md) - How to contribute to the project
 
 ## 🐛 Known Issues
 
@@ -233,6 +241,8 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - Use layers to organize complex drawings
 - Qwen Image Edit model is specifically optimized for editing tasks
 - For faster generation, use SDXL-Turbo (1-2s vs 5-8s)
+- Background removal works best with clear subject-background separation
+- Use PNG format for background removal to preserve transparency
 
 ## 🗺️ Roadmap
 

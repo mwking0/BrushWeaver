@@ -88,3 +88,32 @@ async def test_ai_edit():
 
 
 
+
+@router.get("/test-background-removal")
+async def test_background_removal():
+    """Test background removal service"""
+    try:
+        from services.background_removal_service import background_removal_service
+        
+        # Create test image
+        test_img = Image.new('RGB', (200, 200), color='red')
+        buf = BytesIO()
+        test_img.save(buf, format='PNG')
+        test_data = buf.getvalue()
+        
+        # Test background removal
+        processed_data, status = background_removal_service.remove_background(test_data)
+        
+        return {
+            "status": "success" if "successfully" in status else "warning",
+            "message": status,
+            "original_size": len(test_data),
+            "processed_size": len(processed_data),
+            "service_available": background_removal_service.model is not None
+        }
+    except Exception as e:
+        return {
+            "status": "error",
+            "message": f"Background removal test failed: {e}",
+            "service_available": False
+        }

@@ -92,15 +92,12 @@ Backend/app/architecture_overview.md
 !Frontend/public/*.png
 !Frontend/src/assets/*.png
 
-# Qwen AI Models (large files)
-qwen/qwen2-vl-*/
-qwen/*/model*.safetensors
-qwen/*/pytorch_model*.bin
-qwen/*/*.bin
-qwen/*/*.safetensors
-!qwen/README.md
-!qwen/setup_qwen.py
-!qwen/requirements.txt
+# AI Models (large files)
+Backend/models/
+*.safetensors
+*.bin
+model.onnx
+pytorch_model*.bin
 
 # Development artifacts
 Backend/app/corrected_test_*.png

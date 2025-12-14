@@ -11,15 +11,24 @@ The app is running but needs an AI model to generate images.
 
 ### Download Qwen Image Edit Model (Recommended)
 
+1. **Create models directory:**
 ```bash
-cd qwen
-pip install -r requirements.txt
-python setup_qwen.py
+mkdir Backend/models
 ```
 
-Choose **option 1** (qwen-image-edit) - specifically designed for image editing!
+2. **Download the model:**
+Visit: https://huggingface.co/Qwen/Qwen-Image-Edit-2509
 
-This will download ~10GB. Takes 10-15 minutes depending on your internet.
+Or use git-lfs:
+```bash
+cd Backend/models
+git lfs clone https://huggingface.co/Qwen/Qwen-Image-Edit-2509 qwen-image-edit
+```
+
+3. **Install dependencies:**
+```bash
+pip install diffusers transformers torch torchvision accelerate rembg[gpu]
+```
 
 ### After Download
 
@@ -49,33 +58,40 @@ Look for: `✅ Model loaded successfully on cuda`
 | stable-diffusion-xl | 10-15s | ⭐⭐⭐⭐⭐ | 7GB | Quality |
 | realistic-vision | 8-12s | ⭐⭐⭐⭐⭐ | 5GB | Photorealistic |
 
-## 💡 AI Prompt Examples
+## 💡 AI Features
 
+### Image Editing Prompts
 - "watercolor painting of mountains"
 - "anime style character"
 - "photorealistic portrait"
 - "oil painting landscape"
 - "vibrant cartoon style"
 
+### Background Removal
+- Automatic background removal with AI
+- Multiple models available (u2net, u2netp, silueta, isnet-general-use)
+- Alpha matting for smoother edges
+- PNG output with transparency
+
 ## 🔧 Troubleshooting
 
 ### "Model not found"
-Run: `python qwen/setup_qwen.py`
+- Create `Backend/models/` directory
+- Download model to `Backend/models/qwen-image-edit/`
 
 ### Slow generation
-- GPU: 1-15 seconds (normal)
-- CPU: 30-120 seconds (expected, GPU recommended)
+- GPU: 5-8 seconds (normal for Qwen)
+- CPU: 60-90 seconds (expected, GPU recommended)
 
 ### Out of memory
-- Use smaller model (sdxl-turbo or sd-turbo instead of qwen-image-edit)
-- Close other GPU applications
 - Qwen model requires 12GB+ VRAM
+- Use smaller model (sdxl-turbo) for 8GB GPUs
+- Close other GPU applications
 
 ## 📚 More Info
 
-- Full guide: `LOCAL_MODELS_GUIDE.md`
-- Model details: `qwen/MODELS.md`
-- Setup complete: `SETUP_COMPLETE.md`
+- Model details: https://huggingface.co/Qwen/Qwen-Image-Edit-2509
+- Diffusers docs: https://huggingface.co/docs/diffusers
 
 ---
 

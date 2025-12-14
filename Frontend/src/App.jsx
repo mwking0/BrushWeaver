@@ -1,20 +1,49 @@
-import React, { useState, useEffect } from 'react'
+import React from 'react'
 import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate } from 'react-router-dom'
+import { AuthProvider, useAuth } from './contexts/AuthContext'
 import LandingPage from './components/LandingPage'
 import Login from './components/Auth/Login'
 import Signup from './components/Auth/Signup'
+import OAuthCallback from './components/Auth/OAuthCallback'
 import DrawingEditor from './components/DrawingEditor'
 
 // Protected Route Component
-const ProtectedRoute = ({ children, user }) => {
-  if (!user) {
+const ProtectedRoute = ({ children }) => {
+  const { isAuthenticated, loading } = useAuth()
+  
+  if (loading) {
+    return (
+      <div style={{ 
+        display: 'flex', 
+        justifyContent: 'center', 
+        alignItems: 'center', 
+        height: '100vh',
+        flexDirection: 'column'
+      }}>
+        <div style={{ 
+          width: '40px', 
+          height: '40px', 
+          border: '4px solid #f3f3f3',
+          borderTop: '4px solid #667eea',
+          borderRadius: '50%',
+          animation: 'spin 1s linear infinite',
+          marginBottom: '1rem'
+        }}></div>
+        <p>Loading...</p>
+      </div>
+    )
+  }
+  
+  if (!isAuthenticated) {
     return <Navigate to="/login" replace />
   }
+  
   return children
 }
 
 // Editor Page with Header
-const EditorPage = ({ user, onLogout }) => {
+const EditorPage = () => {
+  const { user, logout } = useAuth()
   const navigate = useNavigate()
 
   return (
@@ -67,8 +96,22 @@ const EditorPage = ({ user, onLogout }) => {
           <div className="header-right">
             {user && (
               <div className="user-menu">
-                <span className="user-name">👋 {user.name}</span>
-                <button className="header-btn" onClick={onLogout} title="Logout">
+                {user.avatar_url && (
+                  <img 
+                    src={user.avatar_url} 
+                    alt="Avatar" 
+                    className="user-avatar"
+                    style={{ 
+                      width: '32px', 
+                      height: '32px', 
+                      borderRadius: '50%', 
+                      marginRight: '8px',
+                      objectFit: 'cover'
+                    }}
+                  />
+                )}
+                <span className="user-name">👋 {user.full_name || user.email}</span>
+                <button className="header-btn" onClick={logout} title="Logout">
                   <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
                     <path fillRule="evenodd" d="M3 3a1 1 0 00-1 1v12a1 1 0 001 1h12a1 1 0 001-1V4a1 1 0 00-1-1H3zm11 4.414l-4.293 4.293a1 1 0 01-1.414 0L4 7.414 5.414 6l3.293 3.293L13.586 6 15 7.414z" clipRule="evenodd" />
                   </svg>
@@ -96,43 +139,34 @@ const EditorPage = ({ user, onLogout }) => {
 }
 
 function App() {
-  const [user, setUser] = useState(null)
-
-  useEffect(() => {
-    // Check if user is logged in
-    const savedUser = localStorage.getItem('user')
-    if (savedUser) {
-      setUser(JSON.parse(savedUser))
-    }
-  }, [])
-
-  const handleLogin = (userData) => {
-    setUser(userData)
-  }
-
-  const handleLogout = () => {
-    localStorage.removeItem('user')
-    setUser(null)
-    window.location.href = '/'
-  }
-
   return (
-    <Router>
-      <Routes>
-        <Route path="/" element={<LandingPage />} />
-        <Route path="/login" element={<Login onLogin={handleLogin} />} />
-        <Route path="/signup" element={<Signup onLogin={handleLogin} />} />
-        <Route
-          path="/editor"
-          element={
-            <ProtectedRoute user={user}>
-              <EditorPage user={user} onLogout={handleLogout} />
-            </ProtectedRoute>
-          }
-        />
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
-    </Router>
+    <AuthProvider>
+      <Router>
+        <Routes>
+          <Route path="/" element={<LandingPage />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/signup" element={<Signup />} />
+          <Route path="/auth/google/callback" element={<OAuthCallback provider="google" />} />
+          <Route path="/auth/github/callback" element={<OAuthCallback provider="github" />} />
+          <Route 
+            path="/editor" 
+            element={
+              <ProtectedRoute>
+                <EditorPage />
+              </ProtectedRoute>
+            } 
+          />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </Router>
+      
+      <style jsx global>{`
+        @keyframes spin {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
+        }
+      `}</style>
+    </AuthProvider>
   )
 }
 

@@ -12,6 +12,7 @@ class Settings:
     
     # Local AI Model Configuration
     LOCAL_MODEL_NAME: str = os.getenv("LOCAL_MODEL_NAME", "qwen-image-edit")  # Image editing model
+    MODEL_DIR: str = os.getenv("MODEL_DIR", "Backend/models")  # Directory containing models
     
     # Server Configuration
     HOST: str = "127.0.0.1"

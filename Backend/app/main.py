@@ -3,7 +3,8 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from config import settings
-from routers import health_router, image_router
+from routers import health_router, image_router, auth_router
+from database import create_tables
 
 
 # Initialize FastAPI app
@@ -25,6 +26,22 @@ app.add_middleware(
 # Include routers
 app.include_router(health_router.router)
 app.include_router(image_router.router)
+app.include_router(auth_router.router)
+
+
+@app.on_event("startup")
+async def startup_event():
+    """Application startup"""
+    print("🚀 BrushWeaver AI Backend starting up...")
+    print(f"📊 Max file size: {settings.MAX_FILE_SIZE / 1024 / 1024:.1f} MB")
+    print(f"🖼️ Max image dimension: {settings.MAX_IMAGE_DIMENSION}px")
+    
+    # Initialize database
+    create_tables()
+    print("🗄️ Database tables created/verified")
+    
+    print("✅ Backend ready!")
+app.include_router(auth_router.router)
 
 
 # Run server directly

@@ -8,6 +8,7 @@ from typing import Optional
 from config import settings
 from services.qwen_service import get_image_gen_service
 from services.image_service import image_service
+from services.background_removal_service import background_removal_service
 from config import settings
 
 # Initialize image generation service
@@ -135,3 +136,117 @@ async def edit_image(
         media_type=f"image/{out_fmt}",
         headers=headers
     )
+
+
+@router.post("/remove-background")
+async def remove_background(
+    file: UploadFile = File(...),
+    model: str = Form("u2net", description="Model to use: u2net|u2netp|silueta|isnet-general-use"),
+    alpha_matting: bool = Form(False, description="Enable alpha matting for better edges"),
+    format: str = Form("png", description="Output format: png|webp"),
+    quality: int = Form(settings.DEFAULT_QUALITY, ge=1, le=100)
+):
+    """
+    Remove background from an image
+    
+    - **file**: Image file to process
+    - **model**: Background removal model to use
+    - **alpha_matting**: Enable alpha matting for smoother edges
+    - **format**: Output format (png recommended for transparency)
+    - **quality**: Output quality (1-100)
+    """
+    
+    # Validate content type
+    if file.content_type not in settings.ALLOWED_CONTENT_TYPES:
+        raise HTTPException(
+            415,
+            f"Unsupported content type: {file.content_type or 'unknown'}"
+        )
+    
+    # Read and validate file size
+    data = await file.read()
+    if len(data) > settings.MAX_FILE_SIZE:
+        raise HTTPException(
+            413,
+            f"File too large (> {settings.MAX_FILE_SIZE} bytes)"
+        )
+    
+    # Remove background
+    try:
+        print(f"🎯 Starting background removal with model: {model}")
+        processed_data, status_message = background_removal_service.remove_background_with_options(
+            data,
+            model_name=model,
+            alpha_matting=alpha_matting
+        )
+        print("✅ Background removal completed")
+    except Exception as e:
+        print(f"❌ Background removal failed: {e}")
+        raise HTTPException(500, f"Background removal failed: {e}")
+    
+    # Load processed image for format conversion if needed
+    try:
+        img = Image.open(BytesIO(processed_data))
+        img.load()
+        print(f"📤 SENDING image: {img.size[0]}x{img.size[1]} ({img.mode})")
+    except Exception:
+        raise HTTPException(500, "Failed to process background removal result")
+    
+    # Prepare output format
+    out_fmt = format.lower()
+    if out_fmt not in ["png", "webp"]:
+        out_fmt = "png"  # Default to PNG for transparency support
+    
+    # Save with proper format
+    buf = BytesIO()
+    save_kwargs = {}
+    if out_fmt == "webp":
+        save_kwargs["quality"] = quality
+        save_kwargs["lossless"] = False
+    
+    img.save(buf, format=out_fmt.upper(), **save_kwargs)
+    
+    print(f"📤 Output buffer size: {buf.tell()} bytes")
+    
+    # Prepare response headers
+    headers = {
+        "Content-Disposition": f'inline; filename="no-background.{out_fmt}"',
+        "X-Processing-Status": status_message.replace('\n', ' ').replace('\r', ' ')
+    }
+    
+    return Response(
+        content=buf.getvalue(),
+        media_type=f"image/{out_fmt}",
+        headers=headers
+    )
+
+
+@router.get("/background-removal/models")
+async def list_background_removal_models():
+    """List available background removal models"""
+    return {
+        "models": [
+            {
+                "name": "u2net",
+                "description": "General purpose model, good balance of speed and quality",
+                "recommended": True
+            },
+            {
+                "name": "u2netp",
+                "description": "Lighter version of u2net, faster but slightly lower quality",
+                "recommended": False
+            },
+            {
+                "name": "silueta",
+                "description": "Good for objects and people",
+                "recommended": False
+            },
+            {
+                "name": "isnet-general-use",
+                "description": "High accuracy model, slower but better quality",
+                "recommended": False
+            }
+        ],
+        "default": "u2net",
+        "alpha_matting_available": True
+    }
