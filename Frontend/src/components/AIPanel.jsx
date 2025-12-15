@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 
-const AIPanel = ({ onAIEdit, isLoading, canvasObjects, onBringToFront, onSendToBack, onBringForward, onSendBackward, onSelectObject, selectedObjectId, onReorderLayers, onRenameLayer }) => {
+const AIPanel = ({ onAIEdit, isLoading, canvasObjects, onBringToFront, onSendToBack, onBringForward, onSendBackward, onSelectObject, selectedObjectId, onReorderLayers, onRenameLayer, onLockObject, onUnlockObject, onToggleObjectLock }) => {
   const [prompt, setPrompt] = useState('')
   const [history, setHistory] = useState([])
   const [selectedStyle, setSelectedStyle] = useState('')
@@ -389,8 +389,8 @@ const AIPanel = ({ onAIEdit, isLoading, canvasObjects, onBringToFront, onSendToB
               return (
                 <div
                   key={obj.id || actualIndex}
-                  draggable
-                  onDragStart={(e) => handleDragStart(e, obj.id)}
+                  draggable={!obj.isLocked}
+                  onDragStart={(e) => !obj.isLocked && handleDragStart(e, obj.id)}
                   onDragOver={(e) => handleDragOver(e, obj.id)}
                   onDragLeave={handleDragLeave}
                   onDrop={(e) => handleDrop(e, obj.id)}
@@ -411,7 +411,11 @@ const AIPanel = ({ onAIEdit, isLoading, canvasObjects, onBringToFront, onSendToB
                       ? '2px solid rgba(102, 126, 234, 0.3)' 
                       : '1px solid rgba(102, 126, 234, 0.1)',
                     borderRadius: '10px',
-                    cursor: isDragging ? 'grabbing' : 'pointer',
+                    cursor: obj.isLocked 
+                      ? 'not-allowed' 
+                      : isDragging 
+                        ? 'grabbing' 
+                        : 'pointer',
                     fontSize: '0.85rem',
                     color: isSelected ? '#ffffff' : '#374151',
                     opacity: isDragging ? 0.5 : 1,
@@ -440,8 +444,16 @@ const AIPanel = ({ onAIEdit, isLoading, canvasObjects, onBringToFront, onSendToB
                     height: '48px', 
                     background: isSelected
                       ? 'linear-gradient(145deg, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0.1) 100%)'
-                      : 'linear-gradient(145deg, #f1f5f9 0%, #e2e8f0 100%)',
-                    border: `2px solid ${isSelected ? 'rgba(255, 255, 255, 0.3)' : 'rgba(102, 126, 234, 0.1)'}`,
+                      : obj.isLocked
+                        ? 'linear-gradient(145deg, #fef3c7 0%, #fde68a 100%)'
+                        : 'linear-gradient(145deg, #f1f5f9 0%, #e2e8f0 100%)',
+                    border: `2px solid ${
+                      isSelected 
+                        ? 'rgba(255, 255, 255, 0.3)' 
+                        : obj.isLocked 
+                          ? '#f59e0b' 
+                          : 'rgba(102, 126, 234, 0.1)'
+                    }`,
                     borderRadius: '8px',
                     display: 'flex',
                     alignItems: 'center',
@@ -450,8 +462,12 @@ const AIPanel = ({ onAIEdit, isLoading, canvasObjects, onBringToFront, onSendToB
                     flexShrink: 0,
                     boxShadow: isSelected 
                       ? '0 4px 12px rgba(0, 0, 0, 0.1)' 
-                      : '0 2px 6px rgba(0, 0, 0, 0.05)',
-                    transition: 'all 0.3s ease'
+                      : obj.isLocked
+                        ? '0 2px 8px rgba(245, 158, 11, 0.2)'
+                        : '0 2px 6px rgba(0, 0, 0, 0.05)',
+                    transition: 'all 0.3s ease',
+                    opacity: obj.isLocked ? 0.8 : 1,
+                    position: 'relative'
                   }}>
                     {obj.type === 'path' && '✏️'}
                     {obj.type === 'rect' && '⬜'}
@@ -462,6 +478,27 @@ const AIPanel = ({ onAIEdit, isLoading, canvasObjects, onBringToFront, onSendToB
                     {obj.type === 'image' && '🖼️'}
                     {obj.type === 'group' && '📁'}
                     {!['path', 'rect', 'circle', 'triangle', 'line', 'i-text', 'image', 'group'].includes(obj.type) && '📦'}
+                    
+                    {/* Lock overlay indicator */}
+                    {obj.isLocked && (
+                      <div style={{
+                        position: 'absolute',
+                        top: '-2px',
+                        right: '-2px',
+                        width: '16px',
+                        height: '16px',
+                        background: '#f59e0b',
+                        borderRadius: '50%',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontSize: '0.6rem',
+                        color: 'white',
+                        boxShadow: '0 2px 4px rgba(0, 0, 0, 0.2)'
+                      }}>
+                        🔒
+                      </div>
+                    )}
                   </div>
 
                   {/* Layer name */}
@@ -510,7 +547,15 @@ const AIPanel = ({ onAIEdit, isLoading, canvasObjects, onBringToFront, onSendToB
                         }}
                         title="Double-click to rename"
                       >
-                        <span style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        <span style={{ 
+                          flex: 1, 
+                          minWidth: 0, 
+                          overflow: 'hidden', 
+                          textOverflow: 'ellipsis',
+                          opacity: obj.isLocked ? 0.7 : 1,
+                          fontStyle: obj.isLocked ? 'italic' : 'normal'
+                        }}>
+                          {obj.isLocked && '🔒 '}
                           {obj.name || (obj.type === 'path' && 'Drawing') ||
                            (obj.type === 'rect' && 'Rectangle') ||
                            (obj.type === 'circle' && 'Circle') ||
@@ -521,6 +566,29 @@ const AIPanel = ({ onAIEdit, isLoading, canvasObjects, onBringToFront, onSendToB
                            (obj.type === 'group' && 'Group') ||
                            obj.type}
                         </span>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            onToggleObjectLock && onToggleObjectLock(obj.id)
+                          }}
+                          style={{
+                            background: 'none',
+                            border: 'none',
+                            cursor: 'pointer',
+                            padding: '0.25rem',
+                            fontSize: '0.75rem',
+                            color: obj.isLocked 
+                              ? (isSelected ? '#fbbf24' : '#f59e0b') 
+                              : (isSelected ? 'rgba(255, 255, 255, 0.8)' : '#667eea'),
+                            opacity: obj.isLocked ? 1 : 0.7,
+                            transition: 'all 0.2s'
+                          }}
+                          onMouseEnter={(e) => e.target.style.opacity = 1}
+                          onMouseLeave={(e) => e.target.style.opacity = obj.isLocked ? 1 : 0.7}
+                          title={obj.isLocked ? "Unlock object" : "Lock object"}
+                        >
+                          {obj.isLocked ? '🔒' : '🔓'}
+                        </button>
                         <button
                           onClick={(e) => {
                             e.stopPropagation()

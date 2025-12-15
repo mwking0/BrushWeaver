@@ -1087,7 +1087,8 @@ const DrawingEditor = () => {
       id: obj.id || `obj-${index}`,
       type: obj.type,
       name: obj.name || null,
-      index: index
+      index: index,
+      isLocked: obj.isLocked || false // Include lock state
     }))
     
     setCanvasObjects(objects)
@@ -1233,6 +1234,7 @@ const DrawingEditor = () => {
 
     if (shape) {
       canvas.add(shape)
+      ensureBackgroundImagesAtBack() // Keep background images at back
       canvas.setActiveObject(shape)
       canvas.renderAll()
       setTimeout(() => saveState(canvas), 10)
@@ -1260,6 +1262,7 @@ const DrawingEditor = () => {
             editable: true
           })
           canvas.add(text)
+          ensureBackgroundImagesAtBack() // Keep background images at back
           canvas.setActiveObject(text)
           text.enterEditing()
           canvas.renderAll()
@@ -1278,6 +1281,7 @@ const DrawingEditor = () => {
             selectable: true
           })
           canvas.add(line)
+          ensureBackgroundImagesAtBack() // Keep background images at back
           canvas.setActiveObject(line)
           canvas.renderAll()
           setTimeout(() => saveState(canvas), 10)
@@ -1376,13 +1380,30 @@ const DrawingEditor = () => {
           top: top,
           scaleX: scale,
           scaleY: scale,
-          selectable: false, // Make background image non-selectable
-          evented: false,    // Make it non-interactive
-          excludeFromExport: false
+          selectable: true,   // Make background image selectable
+          evented: true,      // Make it interactive
+          excludeFromExport: false,
+          name: 'background-image', // Add a name to identify it
+          opacity: 0.95,      // Slightly transparent to indicate it's a background
+          borderColor: '#007bff', // Blue border when selected
+          cornerColor: '#007bff'  // Blue corners when selected
         })
         
-        // Set as background image
-        canvas.setBackgroundImage(img, canvas.renderAll.bind(canvas))
+        // Add as regular object instead of background image
+        canvas.add(img)
+        
+        // Send to back so it acts like a background
+        canvas.sendToBack(img)
+        
+        // Set canvas background to transparent so the image shows through
+        canvas.backgroundColor = 'transparent'
+        
+        canvas.renderAll()
+        
+        // Save state for undo
+        setTimeout(() => saveState(canvas), 100)
+        
+        console.log('✅ Background image loaded as selectable object')
         
         // Clean up event listener
         reader.removeEventListener('load', handleLoad)
@@ -1420,6 +1441,7 @@ const DrawingEditor = () => {
         })
         
         canvas.add(img)
+        ensureBackgroundImagesAtBack() // Keep background images at back
         canvas.setActiveObject(img)
         canvas.renderAll()
         
@@ -1434,9 +1456,107 @@ const DrawingEditor = () => {
 
   const removeBackground = () => {
     if (canvas) {
+      // Remove any objects named 'background-image'
+      const objects = canvas.getObjects()
+      const backgroundImages = objects.filter(obj => obj.name === 'background-image')
+      
+      backgroundImages.forEach(img => {
+        canvas.remove(img)
+      })
+      
+      // Also clear any actual background image (for backward compatibility)
       canvas.setBackgroundImage(null, canvas.renderAll.bind(canvas))
       canvas.backgroundColor = 'white'
       canvas.renderAll()
+      
+      // Save state for undo
+      setTimeout(() => saveState(canvas), 100)
+      
+      console.log('✅ Background image(s) removed')
+    }
+  }
+
+  // Helper function to ensure background images stay at the back
+  const ensureBackgroundImagesAtBack = () => {
+    if (!canvas) return
+    
+    const objects = canvas.getObjects()
+    const backgroundImages = objects.filter(obj => obj.name === 'background-image')
+    
+    backgroundImages.forEach(img => {
+      canvas.sendToBack(img)
+    })
+  }
+
+  // Lock/unlock object functions
+  const lockObject = (objectId) => {
+    if (!canvas) return
+    
+    const obj = canvas.getObjects().find(o => (o.id || `obj-${canvas.getObjects().indexOf(o)}`) === objectId)
+    if (obj) {
+      obj.set({
+        selectable: false,
+        evented: false,
+        lockMovementX: true,
+        lockMovementY: true,
+        lockRotation: true,
+        lockScalingX: true,
+        lockScalingY: true,
+        lockUniScaling: true,
+        hasControls: false,
+        hasBorders: false,
+        isLocked: true // Custom property to track lock state
+      })
+      
+      canvas.renderAll()
+      updateCanvasObjects()
+      
+      // Save state for undo
+      setTimeout(() => saveState(canvas), 100)
+      
+      console.log('🔒 Object locked:', objectId)
+    }
+  }
+
+  const unlockObject = (objectId) => {
+    if (!canvas) return
+    
+    const obj = canvas.getObjects().find(o => (o.id || `obj-${canvas.getObjects().indexOf(o)}`) === objectId)
+    if (obj) {
+      obj.set({
+        selectable: true,
+        evented: true,
+        lockMovementX: false,
+        lockMovementY: false,
+        lockRotation: false,
+        lockScalingX: false,
+        lockScalingY: false,
+        lockUniScaling: false,
+        hasControls: true,
+        hasBorders: true,
+        isLocked: false // Custom property to track lock state
+      })
+      
+      canvas.renderAll()
+      updateCanvasObjects()
+      
+      // Save state for undo
+      setTimeout(() => saveState(canvas), 100)
+      
+      console.log('🔓 Object unlocked:', objectId)
+    }
+  }
+
+  const toggleObjectLock = (objectId) => {
+    if (!canvas) return
+    
+    const obj = canvas.getObjects().find(o => (o.id || `obj-${canvas.getObjects().indexOf(o)}`) === objectId)
+    if (obj) {
+      if (obj.isLocked) {
+        unlockObject(objectId)
+      } else {
+        lockObject(objectId)
+      }
     }
   }
 
@@ -1718,6 +1838,7 @@ const DrawingEditor = () => {
               // Keep original objects, add AI result as background
               canvas.add(img)
               canvas.sendToBack(img)
+              ensureBackgroundImagesAtBack() // Keep background images at back
             } else if (mode === 'selection') {
               // For selection mode, replace only the selected object
               const activeObjects = canvas.getActiveObjects()
@@ -1733,10 +1854,12 @@ const DrawingEditor = () => {
                 canvas.remove(selectedObj)
               }
               canvas.add(img)
+              ensureBackgroundImagesAtBack() // Keep background images at back
               canvas.setActiveObject(img)
             } else {
               // Default: just add the image
               canvas.add(img)
+              ensureBackgroundImagesAtBack() // Keep background images at back
               canvas.setActiveObject(img)
             }
             
@@ -1812,6 +1935,194 @@ const DrawingEditor = () => {
     }
   }
 
+  const handleRemoveBackground = async (model = 'u2net', alphaMatting = false) => {
+    if (!canvas) return
+
+    // Check if user has selected an object
+    const activeObjects = canvas.getActiveObjects()
+    if (activeObjects.length === 0) {
+      alert('Please select an image or object to remove its background.')
+      return
+    }
+    
+    if (activeObjects.length > 1) {
+      alert('Background removal works with single objects only. Please select one object.')
+      return
+    }
+
+    const selectedObject = activeObjects[0]
+    
+    setIsLoading(true)
+    try {
+      let imageDataUrl
+      
+      if (selectedObject.type === 'image') {
+        // Export just the selected image
+        let tempCanvas = null
+        try {
+          tempCanvas = new fabric.Canvas()
+          tempCanvas.setDimensions({
+            width: Math.max(selectedObject.width * selectedObject.scaleX, 1),
+            height: Math.max(selectedObject.height * selectedObject.scaleY, 1)
+          })
+          
+          const clonedObject = fabric.util.object.clone(selectedObject)
+          clonedObject.set({ left: 0, top: 0, scaleX: 1, scaleY: 1 })
+          tempCanvas.add(clonedObject)
+          
+          imageDataUrl = tempCanvas.toDataURL('image/png')
+        } finally {
+          if (tempCanvas) {
+            tempCanvas.dispose()
+          }
+        }
+      } else {
+        // For non-image objects, we need to rasterize them first
+        const objectBounds = selectedObject.getBoundingRect()
+        let tempCanvas = null
+        try {
+          tempCanvas = new fabric.Canvas()
+          tempCanvas.setDimensions({
+            width: Math.max(objectBounds.width, 1),
+            height: Math.max(objectBounds.height, 1)
+          })
+          
+          const clonedObject = fabric.util.object.clone(selectedObject)
+          clonedObject.set({ 
+            left: -objectBounds.left, 
+            top: -objectBounds.top 
+          })
+          tempCanvas.add(clonedObject)
+          
+          imageDataUrl = tempCanvas.toDataURL('image/png')
+        } finally {
+          if (tempCanvas) {
+            tempCanvas.dispose()
+          }
+        }
+      }
+      
+      // Convert data URL to blob
+      const response = await fetch(imageDataUrl)
+      const blob = await response.blob()
+      
+      console.log('🎯 Removing background from selected object:', {
+        objectType: selectedObject.type,
+        blobSize: blob.size,
+        model: model,
+        alphaMatting: alphaMatting
+      })
+      
+      // Create form data
+      const formData = new FormData()
+      formData.append('file', blob, 'object.png')
+      formData.append('model', model)
+      formData.append('alpha_matting', alphaMatting.toString())
+      formData.append('format', 'png')
+
+      // Send to background removal endpoint
+      const removeResponse = await fetch('http://localhost:8000/edit/remove-background', {
+        method: 'POST',
+        body: formData
+      })
+
+      if (removeResponse.ok) {
+        const processedImageBlob = await removeResponse.blob()
+        console.log('✅ Background removed successfully:', {
+          blobSize: processedImageBlob.size,
+          blobType: processedImageBlob.type
+        })
+        
+        const processedImageUrl = URL.createObjectURL(processedImageBlob)
+        blobUrlsRef.current.push(processedImageUrl) // Track for cleanup
+        
+        // Get processing status from response headers if available
+        const processingStatus = removeResponse.headers.get('X-Processing-Status')
+        if (processingStatus) {
+          console.log('🔄 Processing Status:', processingStatus)
+        }
+        
+        // Load processed image back to canvas
+        fabric.Image.fromURL(processedImageUrl, 
+          // Success callback
+          (img) => {
+            console.log('🖼️ Loading background-removed image...')
+            
+            // Position the new image where the selected object was
+            img.set({
+              left: selectedObject.left,
+              top: selectedObject.top,
+              scaleX: selectedObject.scaleX,
+              scaleY: selectedObject.scaleY,
+              selectable: true,
+              evented: true
+            })
+            
+            // Remove the original object and add the processed one
+            canvas.remove(selectedObject)
+            canvas.add(img)
+            ensureBackgroundImagesAtBack() // Keep background images at back
+            canvas.setActiveObject(img)
+            canvas.renderAll()
+            
+            // Save state for undo
+            setTimeout(() => saveState(canvas), 100)
+            
+            // Clean up the blob URL
+            setTimeout(() => {
+              URL.revokeObjectURL(processedImageUrl)
+              const index = blobUrlsRef.current.indexOf(processedImageUrl)
+              if (index > -1) {
+                blobUrlsRef.current.splice(index, 1)
+              }
+            }, 1000)
+            
+            console.log('✨ Background removal completed successfully!')
+          },
+          // Error callback
+          (error) => {
+            console.error('❌ Failed to load processed image:', error)
+            URL.revokeObjectURL(processedImageUrl)
+            const index = blobUrlsRef.current.indexOf(processedImageUrl)
+            if (index > -1) {
+              blobUrlsRef.current.splice(index, 1)
+            }
+            alert('Failed to display processed image. The background removal was completed but display failed.')
+          },
+          // Options
+          {
+            crossOrigin: 'anonymous'
+          }
+        )
+      } else {
+        const errorText = await removeResponse.text()
+        console.error('❌ Failed to remove background:', errorText)
+        alert(`Background removal failed: ${errorText}`)
+        throw new Error(`Server error: ${removeResponse.status}`)
+      }
+    } catch (error) {
+      console.error('❌ Background removal error:', error)
+      
+      // Show user-friendly error message
+      let errorMessage = 'Background removal failed. Please try again.'
+      
+      if (error.message.includes('Failed to fetch')) {
+        errorMessage = 'Cannot connect to backend. Make sure the server is running on http://localhost:8000'
+      } else if (error.message.includes('Server error: 500')) {
+        errorMessage = 'Background removal service error. Make sure rembg is installed on the backend.'
+      }
+      
+      alert(errorMessage)
+      
+      console.error('💡 Troubleshooting:')
+      console.error('1. Make sure backend is running: python Backend/app/main.py')
+      console.error('2. Install rembg: pip install rembg[gpu]')
+      console.error('3. Test backend: http://localhost:8000/edit/background-removal/models')
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
   return (
     <>
       <Toolbar
@@ -1827,6 +2138,7 @@ const DrawingEditor = () => {
         onLoadImageAsBackground={loadImageAsBackground}
         onLoadImageAsObject={loadImageAsObject}
         onRemoveBackground={removeBackground}
+        onRemoveObjectBackground={handleRemoveBackground}
         onSetPresetSize={setPresetSize}
         onSetCanvasDimensions={setCanvasDimensions}
         canvasSize={canvasSize}
@@ -1906,6 +2218,9 @@ const DrawingEditor = () => {
         selectedObjectId={selectedObjectId}
         onReorderLayers={reorderLayers}
         onRenameLayer={renameLayer}
+        onLockObject={lockObject}
+        onUnlockObject={unlockObject}
+        onToggleObjectLock={toggleObjectLock}
       />
     </>
   )

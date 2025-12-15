@@ -13,6 +13,7 @@ const Toolbar = ({
   onLoadImageAsBackground,
   onLoadImageAsObject,
   onRemoveBackground,
+  onRemoveObjectBackground,
   onSetPresetSize,
   onSetCanvasDimensions,
   canvasSize,
@@ -329,6 +330,20 @@ const Toolbar = ({
             title="Remove background image"
           >
             🗑️ Remove BG
+          </button>
+          <button
+            className="tool-btn"
+            onClick={() => onRemoveObjectBackground && onRemoveObjectBackground()}
+            disabled={!hasSelection}
+            style={{ 
+              width: '100%', 
+              background: hasSelection ? '#e83e8c' : '#6c757d', 
+              color: 'white',
+              opacity: hasSelection ? 1 : 0.6
+            }}
+            title="Remove background from selected object"
+          >
+            ✂️ Remove Object BG
           </button>
         </div>
       </div>
