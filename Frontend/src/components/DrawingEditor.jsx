@@ -318,6 +318,8 @@ const DrawingEditor = () => {
       fabricCanvas.freeDrawingBrush.width = brushSize
       fabricCanvas.freeDrawingBrush.color = brushColor
 
+
+
       // Add zoom functionality
       fabricCanvas.on('mouse:wheel', handleMouseWheel)
       
@@ -474,6 +476,12 @@ const DrawingEditor = () => {
         setSelectedObjectId(null)
       })
 
+
+
+
+
+
+
       // Custom handler for Ctrl+click multi-selection
       fabricCanvas.on('mouse:down', (options) => {
         if (!options.target) return
@@ -553,6 +561,8 @@ const DrawingEditor = () => {
         fabricCanvas.off('object:moved')
         fabricCanvas.off('object:scaled')
         fabricCanvas.off('object:rotated')
+        
+
         fabricCanvas.off('text:changed')
         fabricCanvas.off('selection:created')
         fabricCanvas.off('selection:updated')
@@ -1560,6 +1570,8 @@ const DrawingEditor = () => {
     }
   }
 
+
+
   const setCanvasDimensions = (width, height) => {
     // Check if canvas has content
     const hasContent = canvas && (canvas.getObjects().length > 0 || canvas.backgroundImage)
@@ -2222,6 +2234,10 @@ const DrawingEditor = () => {
         onUnlockObject={unlockObject}
         onToggleObjectLock={toggleObjectLock}
       />
+
+
+
+
     </>
   )
 }

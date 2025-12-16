@@ -4,7 +4,11 @@ pillow==10.4.0
 python-multipart==0.0.9
 python-dotenv==1.0.0
 requests==2.31.0
-rembg[gpu]==2.0.57  # Background removal (use rembg[cpu] for CPU-only)
+# Background removal - lightweight options
+opencv-python==4.8.1.78  # Always available, CPU-only
+rembg==2.0.57  # Lightweight AI models (optional)
+transformers>=4.21.0  # For BiRefNet (optional, better quality)
+torch>=1.13.0  # For AI models (optional)
 # Authentication dependencies
 python-jose[cryptography]==3.3.0
 passlib[bcrypt]==1.7.4
