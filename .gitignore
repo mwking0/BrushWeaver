@@ -74,6 +74,10 @@ test_result.png
 
 # Development and test files
 Backend/app/tests/
+Backend/test/
+Backend/tests/
+test/
+tests/
 scripts/security_check.py
 scripts/pre-commit-hook.sh
 scripts/dev_tools/
@@ -87,10 +91,13 @@ NANO_BANANA_INFO.md
 GEMINI_API_INTERACTION.md
 Backend/app/architecture_overview.md
 
-# Test result images
+# Test result images and files
 *.png
 !Frontend/public/*.png
 !Frontend/src/assets/*.png
+test_*.py
+test_output_*.png
+*_test_*.png
 
 # AI Models (large files)
 Backend/models/

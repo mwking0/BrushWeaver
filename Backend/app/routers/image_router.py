@@ -224,29 +224,4 @@ async def remove_background(
 @router.get("/background-removal/models")
 async def list_background_removal_models():
     """List available background removal models"""
-    return {
-        "models": [
-            {
-                "name": "u2net",
-                "description": "General purpose model, good balance of speed and quality",
-                "recommended": True
-            },
-            {
-                "name": "u2netp",
-                "description": "Lighter version of u2net, faster but slightly lower quality",
-                "recommended": False
-            },
-            {
-                "name": "silueta",
-                "description": "Good for objects and people",
-                "recommended": False
-            },
-            {
-                "name": "isnet-general-use",
-                "description": "High accuracy model, slower but better quality",
-                "recommended": False
-            }
-        ],
-        "default": "u2net",
-        "alpha_matting_available": True
-    }
+    return background_removal_service.test_connection()
