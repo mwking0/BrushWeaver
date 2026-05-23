@@ -41,7 +41,6 @@ async def startup_event():
     print("🗄️ Database tables created/verified")
     
     print("✅ Backend ready!")
-app.include_router(auth_router.router)
 
 
 # Run server directly

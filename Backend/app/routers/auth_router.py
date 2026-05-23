@@ -6,8 +6,8 @@ from datetime import timedelta
 import httpx
 import os
 
-from database import get_db
-from auth import (
+from database import get_db, User
+from services.auth_service import (
     authenticate_user, create_user, get_user_by_email, get_user_by_google_id,
     get_user_by_github_id, create_access_token, create_refresh_token,
     verify_token, get_current_active_user, ACCESS_TOKEN_EXPIRE_MINUTES

@@ -9,7 +9,6 @@ from config import settings
 from services.qwen_service import get_image_gen_service
 from services.image_service import image_service
 from services.background_removal_service import background_removal_service
-from config import settings
 
 # Initialize image generation service
 image_gen_service = get_image_gen_service(settings.LOCAL_MODEL_NAME)
