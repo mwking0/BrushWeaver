@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { useAuth } from '../../contexts/AuthContext'
+import { useAuth } from './AuthContext'
 
 const OAuthCallback = ({ provider }) => {
   const [status, setStatus] = useState('processing')

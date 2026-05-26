@@ -1,6 +1,6 @@
 # app/routers/image_router.py
 """Image editing endpoints"""
-from fastapi import APIRouter, UploadFile, File, HTTPException, Form
+from fastapi import APIRouter, UploadFile, File, HTTPException, Form, Depends
 from fastapi.responses import Response
 from PIL import Image, ImageFilter
 from io import BytesIO
@@ -9,11 +9,27 @@ from config import settings
 from services.qwen_service import get_image_gen_service
 from services.image_service import image_service
 from services.background_removal_service import background_removal_service
+from services.auth_service import get_current_active_user
+from database import get_db, User
+from sqlalchemy.orm import Session
 
 # Initialize image generation service
 image_gen_service = get_image_gen_service(settings.LOCAL_MODEL_NAME)
 
 router = APIRouter(prefix="/edit", tags=["Image Editing"])
+
+
+def deduct_user_credit(db: Session, user: User):
+    """Deduct 1 credit from user. Raises 402 if insufficient."""
+    if user.credits <= 0:
+        raise HTTPException(
+            status_code=402,
+            detail="Insufficient credits. Please purchase more credits to continue."
+        )
+    user.credits -= 1
+    db.commit()
+    db.refresh(user)
+    return user.credits
 
 
 @router.post("")
@@ -29,7 +45,9 @@ async def edit_image(
     blur: float = Form(0.0, ge=0.0, le=50.0),
     watermark: str = Form(""),
     quality: int = Form(settings.DEFAULT_QUALITY, ge=1, le=100),
-    use_ai: bool = Form(True, description="Use AI for editing")
+    use_ai: bool = Form(True, description="Use AI for editing"),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
 ):
     """
     Edit an image with AI and traditional processing
@@ -64,6 +82,9 @@ async def edit_image(
     # AI-powered image generation ONLY (Approach A)
     ai_analysis = ""
     if use_ai and prompt:
+        # Deduct credit before AI operation
+        remaining = deduct_user_credit(db, current_user)
+        print(f"💳 Credit deducted. Remaining: {remaining}")
         try:
             print(f"🤖 Starting AI image generation: '{prompt}' with style: '{style}'")
             data, ai_analysis = await image_gen_service.edit_image_with_ai(
@@ -143,7 +164,9 @@ async def remove_background(
     model: str = Form("u2net", description="Model to use: u2net|u2netp|silueta|isnet-general-use"),
     alpha_matting: bool = Form(False, description="Enable alpha matting for better edges"),
     format: str = Form("png", description="Output format: png|webp"),
-    quality: int = Form(settings.DEFAULT_QUALITY, ge=1, le=100)
+    quality: int = Form(settings.DEFAULT_QUALITY, ge=1, le=100),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
 ):
     """
     Remove background from an image
@@ -172,6 +195,9 @@ async def remove_background(
     
     # Remove background
     try:
+        # Deduct credit before processing
+        remaining = deduct_user_credit(db, current_user)
+        print(f"💳 Credit deducted. Remaining: {remaining}")
         print(f"🎯 Starting background removal with model: {model}")
         processed_data, status_message = background_removal_service.remove_background_with_options(
             data,

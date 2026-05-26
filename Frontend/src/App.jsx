@@ -1,11 +1,11 @@
 import React from 'react'
 import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate } from 'react-router-dom'
-import { AuthProvider, useAuth } from './contexts/AuthContext'
-import LandingPage from './components/LandingPage'
-import Login from './components/Auth/Login'
-import Signup from './components/Auth/Signup'
-import OAuthCallback from './components/Auth/OAuthCallback'
-import DrawingEditor from './components/DrawingEditor'
+import { AuthProvider, useAuth } from './features/auth/AuthContext'
+import LandingPage from './features/landing/LandingPage'
+import Login from './features/auth/Login'
+import Signup from './features/auth/Signup'
+import OAuthCallback from './features/auth/OAuthCallback'
+import DrawingEditor from './features/editor/DrawingEditor'
 
 // Protected Route Component
 const ProtectedRoute = ({ children }) => {
@@ -43,7 +43,7 @@ const ProtectedRoute = ({ children }) => {
 
 // Editor Page with Header
 const EditorPage = () => {
-  const { user, logout } = useAuth()
+  const { user, logout, credits, refreshCredits } = useAuth()
   const navigate = useNavigate()
 
   return (
@@ -94,45 +94,52 @@ const EditorPage = () => {
           </div>
 
           <div className="header-right">
+            {/* Credits badge */}
+            {user && (
+              <div style={{
+                display: 'flex', alignItems: 'center', gap: '0.4rem',
+                padding: '0.3rem 0.75rem',
+                background: credits <= 2 ? 'rgba(239,68,68,0.15)' : 'rgba(139,92,246,0.15)',
+                border: `1px solid ${credits <= 2 ? 'rgba(239,68,68,0.3)' : 'rgba(139,92,246,0.3)'}`,
+                borderRadius: '20px', fontSize: '0.8rem', fontWeight: 600,
+                color: credits <= 2 ? '#f87171' : '#c4b5fd', cursor: 'default',
+              }} title="Available AI credits">
+                <span>⚡</span>
+                <span>{credits} credit{credits !== 1 ? 's' : ''}</span>
+              </div>
+            )}
+
             {user && (
               <div className="user-menu">
-                {user.avatar_url && (
-                  <img 
-                    src={user.avatar_url} 
-                    alt="Avatar" 
-                    className="user-avatar"
-                    style={{ 
-                      width: '32px', 
-                      height: '32px', 
-                      borderRadius: '50%', 
-                      marginRight: '8px',
-                      objectFit: 'cover'
-                    }}
+                {user.avatar_url ? (
+                  <img src={user.avatar_url} alt="Avatar"
+                    style={{ width: '30px', height: '30px', borderRadius: '50%', objectFit: 'cover', border: '2px solid rgba(139,92,246,0.5)' }}
                   />
+                ) : (
+                  <div style={{
+                    width: '30px', height: '30px', borderRadius: '50%',
+                    background: 'linear-gradient(135deg, #8b5cf6, #ec4899)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    fontSize: '0.75rem', fontWeight: 700, color: 'white', flexShrink: 0,
+                  }}>
+                    {(user.full_name || user.email || '?')[0].toUpperCase()}
+                  </div>
                 )}
-                <span className="user-name">👋 {user.full_name || user.email}</span>
-                <button className="header-btn" onClick={logout} title="Logout">
-                  <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
-                    <path fillRule="evenodd" d="M3 3a1 1 0 00-1 1v12a1 1 0 001 1h12a1 1 0 001-1V4a1 1 0 00-1-1H3zm11 4.414l-4.293 4.293a1 1 0 01-1.414 0L4 7.414 5.414 6l3.293 3.293L13.586 6 15 7.414z" clipRule="evenodd" />
+                <span className="user-name" style={{ maxWidth: '140px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {user.full_name || user.email}
+                </span>
+                <button className="header-btn" onClick={logout} title="Logout" style={{ flexShrink: 0 }}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/>
                   </svg>
                 </button>
               </div>
             )}
-            <button className="header-btn help-btn" title="Help & Shortcuts">
-              <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
-                <path d="M10 0C4.477 0 0 4.477 0 10s4.477 10 10 10 10-4.477 10-10S15.523 0 10 0zm1 15H9v-2h2v2zm0-4H9V5h2v6z" />
-              </svg>
-            </button>
-            <button className="header-btn github-btn" title="View on GitHub">
-              <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
-                <path d="M10 0C4.477 0 0 4.477 0 10c0 4.42 2.865 8.17 6.839 9.49.5.092.682-.217.682-.482 0-.237-.008-.866-.013-1.7-2.782.603-3.369-1.34-3.369-1.34-.454-1.156-1.11-1.463-1.11-1.463-.908-.62.069-.608.069-.608 1.003.07 1.531 1.03 1.531 1.03.892 1.529 2.341 1.087 2.91.831.092-.646.35-1.086.636-1.336-2.22-.253-4.555-1.11-4.555-4.943 0-1.091.39-1.984 1.029-2.683-.103-.253-.446-1.27.098-2.647 0 0 .84-.269 2.75 1.025A9.578 9.578 0 0110 4.836c.85.004 1.705.114 2.504.336 1.909-1.294 2.747-1.025 2.747-1.025.546 1.377.203 2.394.1 2.647.64.699 1.028 1.592 1.028 2.683 0 3.842-2.339 4.687-4.566 4.935.359.309.678.919.678 1.852 0 1.336-.012 2.415-.012 2.743 0 .267.18.578.688.48C17.137 18.165 20 14.418 20 10c0-5.523-4.477-10-10-10z" />
-              </svg>
-            </button>
           </div>
         </div>
       </header>
       <main className="main-content">
-        <DrawingEditor />
+        <DrawingEditor onCreditUsed={refreshCredits} />
       </main>
     </div>
   )

@@ -1,0 +1,10 @@
+﻿/* ===== GLOBAL STYLES ENTRY POINT =====
+ * Import order matters — reset first, then variables,
+ * then feature-specific styles.
+ */
+
+@import './reset.css';
+@import './animations.css';
+@import './editor.css';
+@import './auth.css';
+@import './landing.css';

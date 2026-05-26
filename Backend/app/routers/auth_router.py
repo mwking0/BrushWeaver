@@ -349,3 +349,50 @@ async def github_callback(callback_data: OAuthCallback, db: Session = Depends(ge
 async def logout(current_user = Depends(get_current_active_user)):
     """Logout user (client should delete tokens)"""
     return {"message": "Successfully logged out"}
+
+
+# ── Credit endpoints ──────────────────────────────────────────────────────────
+
+@router.get("/credits")
+async def get_credits(current_user: User = Depends(get_current_active_user)):
+    """Get current user's credit balance"""
+    return {"credits": current_user.credits}
+
+
+@router.post("/credits/deduct")
+async def deduct_credit(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
+    """Deduct 1 credit for an AI operation"""
+    if current_user.credits <= 0:
+        raise HTTPException(
+            status_code=status.HTTP_402_PAYMENT_REQUIRED,
+            detail="Insufficient credits. Please purchase more credits to continue."
+        )
+
+    current_user.credits -= 1
+    db.commit()
+    db.refresh(current_user)
+
+    return {"credits": current_user.credits, "deducted": 1}
+
+
+@router.post("/credits/add")
+async def add_credits(
+    amount: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
+    """Add credits to user account (for testing / future payment integration)"""
+    if amount <= 0 or amount > 1000:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid credit amount"
+        )
+
+    current_user.credits += amount
+    db.commit()
+    db.refresh(current_user)
+
+    return {"credits": current_user.credits, "added": amount}

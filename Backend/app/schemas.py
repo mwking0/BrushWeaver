@@ -23,6 +23,7 @@ class UserResponse(UserBase):
     is_verified: bool
     created_at: datetime
     avatar_url: Optional[str] = None
+    credits: int = 0
     
     class Config:
         from_attributes = True

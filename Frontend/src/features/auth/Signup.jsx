@@ -1,35 +1,48 @@
 import React, { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
-import { useAuth } from '../../contexts/AuthContext'
+import { useAuth } from './AuthContext'
 
-const Login = () => {
+const Signup = () => {
+  const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
   const navigate = useNavigate()
-  const { login, getGoogleAuthUrl, getGitHubAuthUrl } = useAuth()
+  const { signup, getGoogleAuthUrl, getGitHubAuthUrl } = useAuth()
 
   const handleSubmit = async (e) => {
     e.preventDefault()
     setError('')
+
+    if (password !== confirmPassword) {
+      setError('Passwords do not match')
+      return
+    }
+
+    if (password.length < 6) {
+      setError('Password must be at least 6 characters')
+      return
+    }
+
     setLoading(true)
 
     try {
-      const result = await login(email, password)
+      const result = await signup(email, password, name)
       if (result.success) {
         navigate('/editor')
       } else {
         setError(result.error)
       }
     } catch (err) {
-      setError('Login failed. Please try again.')
+      setError('Signup failed. Please try again.')
     } finally {
       setLoading(false)
     }
   }
 
-  const handleGoogleLogin = async () => {
+  const handleGoogleSignup = async () => {
     try {
       const authUrl = await getGoogleAuthUrl()
       if (authUrl) {
@@ -38,11 +51,11 @@ const Login = () => {
         setError('Google OAuth not configured')
       }
     } catch (err) {
-      setError('Failed to initiate Google login')
+      setError('Failed to initiate Google signup')
     }
   }
 
-  const handleGitHubLogin = async () => {
+  const handleGitHubSignup = async () => {
     try {
       const authUrl = await getGitHubAuthUrl()
       if (authUrl) {
@@ -51,7 +64,7 @@ const Login = () => {
         setError('GitHub OAuth not configured')
       }
     } catch (err) {
-      setError('Failed to initiate GitHub login')
+      setError('Failed to initiate GitHub signup')
     }
   }
 
@@ -60,8 +73,8 @@ const Login = () => {
       <div className="auth-container">
         <div className="auth-card">
           <div className="auth-header">
-            <h1 className="auth-title">Welcome Back</h1>
-            <p className="auth-subtitle">Sign in to continue creating</p>
+            <h1 className="auth-title">Create Account</h1>
+            <p className="auth-subtitle">Start creating amazing art today</p>
           </div>
 
           {error && (
@@ -74,6 +87,19 @@ const Login = () => {
           )}
 
           <form onSubmit={handleSubmit} className="auth-form">
+            <div className="form-group">
+              <label htmlFor="name" className="form-label">Full Name</label>
+              <input
+                type="text"
+                id="name"
+                className="form-input"
+                placeholder="John Doe"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                required
+              />
+            </div>
+
             <div className="form-group">
               <label htmlFor="email" className="form-label">Email</label>
               <input
@@ -97,25 +123,38 @@ const Login = () => {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
+                minLength={6}
+              />
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="confirmPassword" className="form-label">Confirm Password</label>
+              <input
+                type="password"
+                id="confirmPassword"
+                className="form-input"
+                placeholder="••••••••"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                required
               />
             </div>
 
             <div className="form-footer">
               <label className="checkbox-label">
-                <input type="checkbox" className="checkbox" />
-                <span>Remember me</span>
+                <input type="checkbox" className="checkbox" required />
+                <span>I agree to the <a href="#" className="link">Terms</a> and <a href="#" className="link">Privacy Policy</a></span>
               </label>
-              <a href="#" className="link">Forgot password?</a>
             </div>
 
             <button type="submit" className="btn btn-primary btn-full" disabled={loading}>
               {loading ? (
                 <>
                   <div className="spinner-small"></div>
-                  Signing in...
+                  Creating account...
                 </>
               ) : (
-                'Sign In'
+                'Create Account'
               )}
             </button>
           </form>
@@ -128,7 +167,7 @@ const Login = () => {
             <button 
               type="button" 
               className="btn btn-social"
-              onClick={handleGoogleLogin}
+              onClick={handleGoogleSignup}
               disabled={loading}
             >
               <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
@@ -142,7 +181,7 @@ const Login = () => {
             <button 
               type="button" 
               className="btn btn-social"
-              onClick={handleGitHubLogin}
+              onClick={handleGitHubSignup}
               disabled={loading}
             >
               <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
@@ -153,7 +192,7 @@ const Login = () => {
           </div>
 
           <div className="auth-footer-text">
-            Don't have an account? <Link to="/signup" className="link">Sign up</Link>
+            Already have an account? <Link to="/login" className="link">Sign in</Link>
           </div>
         </div>
       </div>
@@ -161,4 +200,4 @@ const Login = () => {
   )
 }
 
-export default Login
+export default Signup

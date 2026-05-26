@@ -35,6 +35,9 @@ class User(Base):
     google_id = Column(String, unique=True, nullable=True)
     github_id = Column(String, unique=True, nullable=True)
     avatar_url = Column(String, nullable=True)
+    
+    # Credits
+    credits = Column(Integer, default=10, nullable=False)
 
 
 # Create tables

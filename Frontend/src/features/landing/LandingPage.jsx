@@ -64,50 +64,52 @@ const LandingPage = () => {
 
         {/* New Structure: App Interface Preview */}
         <div className="hero-visual">
-          <div className="app-preview-card">
-            <div className="app-header">
-              <div className="app-dots">
-                <div className="dot red"></div>
-                <div className="dot yellow"></div>
-                <div className="dot green"></div>
+          <div className="hero-visual-wrapper">
+            <div className="app-preview-card">
+              <div className="app-header">
+                <div className="app-dots">
+                  <div className="dot red"></div>
+                  <div className="dot yellow"></div>
+                  <div className="dot green"></div>
+                </div>
+                <div className="app-search">brushweaver.app</div>
               </div>
-              <div className="app-search">brushweaver.app</div>
-            </div>
-            <div className="app-body">
-              <div className="app-sidebar">
-                <div className="app-tool active"><Brush size={16} /></div>
-                <div className="app-tool"><Wand2 size={16} /></div>
-                <div className="app-tool"><Layers size={16} /></div>
-              </div>
-              <div className="app-canvas">
-                <div className="floating-element circle"></div>
-                <div className="floating-element square"></div>
-                <div className="ai-processing-badge">
-                  <Sparkles size={14} className="spin" />
-                  Generating...
+              <div className="app-body">
+                <div className="app-sidebar">
+                  <div className="app-tool active"><Brush size={16} /></div>
+                  <div className="app-tool"><Wand2 size={16} /></div>
+                  <div className="app-tool"><Layers size={16} /></div>
+                </div>
+                <div className="app-canvas">
+                  <div className="floating-element circle"></div>
+                  <div className="floating-element square"></div>
+                  <div className="ai-processing-badge">
+                    <Sparkles size={14} className="spin" />
+                    Generating...
+                  </div>
+                </div>
+                <div className="app-panels">
+                  <div className="panel-item"></div>
+                  <div className="panel-item"></div>
+                  <div className="panel-item short"></div>
                 </div>
               </div>
-              <div className="app-panels">
-                <div className="panel-item"></div>
-                <div className="panel-item"></div>
-                <div className="panel-item short"></div>
+            </div>
+
+            {/* Floating Feature Cards */}
+            <div className="visual-card-floating card-tools">
+              <div className="card-icon"><Palette size={20} /></div>
+              <div className="card-text">
+                <span className="card-label">Tools</span>
+                <span className="card-value">Professional</span>
               </div>
             </div>
-          </div>
-
-          {/* Floating Feature Cards */}
-          <div className="visual-card-floating card-1">
-            <div className="card-icon"><Palette size={24} /></div>
-            <div className="card-text">
-              <span className="card-label">Tools</span>
-              <span className="card-value">Professional</span>
-            </div>
-          </div>
-          <div className="visual-card-floating card-2">
-            <div className="card-icon"><Sparkles size={24} /></div>
-            <div className="card-text">
-              <span className="card-label">AI Model</span>
-              <span className="card-value">Qwen Edit</span>
+            <div className="visual-card-floating card-ai">
+              <div className="card-icon"><Sparkles size={20} /></div>
+              <div className="card-text">
+                <span className="card-label">AI Model</span>
+                <span className="card-value">Qwen Edit</span>
+              </div>
             </div>
           </div>
         </div>

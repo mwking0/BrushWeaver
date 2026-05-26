@@ -1,0 +1,41 @@
+/* ===== RESET & BASE ===== */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  min-height: 100vh;
+}
+
+/* ===== CSS VARIABLES ===== */
+:root {
+  --primary-color: #8b5cf6;
+  --secondary-color: #ec4899;
+  --accent-color: #06b6d4;
+  --dark-bg: #030712;
+  --card-bg: rgba(17, 24, 39, 0.7);
+  --text-primary: #f9fafb;
+  --text-secondary: #9ca3af;
+}
+
+/* ===== ACCESSIBILITY ===== */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+@media (prefers-contrast: high) {
+  .tool-btn {
+    border-width: 2px;
+  }
+}
