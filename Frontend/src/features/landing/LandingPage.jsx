@@ -108,7 +108,7 @@ const LandingPage = () => {
               <div className="card-icon"><Sparkles size={20} /></div>
               <div className="card-text">
                 <span className="card-label">AI Model</span>
-                <span className="card-value">Qwen Edit</span>
+                <span className="card-value">Gemini 2.5 Flash</span>
               </div>
             </div>
           </div>

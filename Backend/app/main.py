@@ -35,23 +35,24 @@ async def startup_event():
     print("🚀 BrushWeaver AI Backend starting up...")
     print(f"📊 Max file size: {settings.MAX_FILE_SIZE / 1024 / 1024:.1f} MB")
     print(f"🖼️ Max image dimension: {settings.MAX_IMAGE_DIMENSION}px")
-    
+    print(f"🤖 Gemini model: {settings.GEMINI_MODEL}")
+
     # Initialize database
     create_tables()
     print("🗄️ Database tables created/verified")
-    
+
     print("✅ Backend ready!")
 
 
 # Run server directly
 if __name__ == "__main__":
     import uvicorn
-    
+
     print("🎨 BrushWeaver Backend Server Starting...")
     print(f"📡 Server: http://{settings.HOST}:{settings.PORT}")
     print(f"📚 API Docs: http://{settings.HOST}:{settings.PORT}/docs")
-    print(f"🧪 Test Gemini: http://{settings.HOST}:{settings.PORT}/test-gemini")
-    
+    print(f"🧪 Test Gemini: http://{settings.HOST}:{settings.PORT}/test-ai")
+
     uvicorn.run(
         "main:app",
         host=settings.HOST,

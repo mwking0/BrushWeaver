@@ -4,11 +4,11 @@ pillow==10.4.0
 python-multipart==0.0.9
 python-dotenv==1.0.0
 requests==2.31.0
-# Background removal - lightweight options
-opencv-python==4.8.1.78  # Always available, CPU-only
-rembg==2.0.57  # Lightweight AI models (optional)
-transformers>=4.21.0  # For BiRefNet (optional, better quality)
-torch>=1.13.0  # For AI models (optional)
+# AI provider
+google-genai>=0.3.0
+# Background removal (local)
+opencv-python==4.8.1.78
+rembg==2.0.57
 # Authentication dependencies
 python-jose[cryptography]==3.3.0
 passlib[bcrypt]==1.7.4

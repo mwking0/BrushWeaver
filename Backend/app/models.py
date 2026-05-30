@@ -58,20 +58,3 @@ class AIEditTestResponse(BaseModel):
     image_generated: Optional[bool] = None
     generation_model: Optional[str] = None
     analysis_model: Optional[str] = None
-
-
-class ImageGenerationTestResult(BaseModel):
-    """Single model test result"""
-    model: str
-    status: str
-    can_generate_images: bool
-    response_type: Optional[str] = None
-    error: Optional[str] = None
-
-
-class ImageGenerationTestResponse(BaseModel):
-    """Image generation test response"""
-    status: str
-    results: Optional[list[ImageGenerationTestResult]] = None
-    current_generation_model: Optional[str] = None
-    message: Optional[str] = None
