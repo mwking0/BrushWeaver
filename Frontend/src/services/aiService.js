@@ -1,8 +1,18 @@
 /**
- * AI service — image editing and background removal API calls.
+ * AI service — image editing, text-to-image generation, and background removal.
+ * Auth headers and 401 refresh are handled by apiRequest.
  */
 
-const BASE_URL = 'http://localhost:8000'
+import { apiRequest, BASE_URL } from './apiClient'
+
+function ensureOk(res) {
+  if (!res.ok) {
+    const err = new Error(`Server error: ${res.status}`)
+    err.status = res.status
+    throw err
+  }
+  return res
+}
 
 export async function editImageRequest(imageBlob, prompt, style = 'none') {
   const formData = new FormData()
@@ -12,9 +22,19 @@ export async function editImageRequest(imageBlob, prompt, style = 'none') {
   formData.append('format', 'png')
   formData.append('use_ai', 'true')
 
-  const res = await fetch(`${BASE_URL}/edit`, { method: 'POST', body: formData })
-  if (!res.ok) throw new Error(`Server error: ${res.status}`)
-  return res
+  const res = await apiRequest('/edit', { method: 'POST', body: formData })
+  return ensureOk(res)
+}
+
+export async function generateImageRequest(prompt, style = 'none') {
+  const formData = new FormData()
+  formData.append('prompt', prompt)
+  formData.append('style', style)
+  formData.append('format', 'png')
+  formData.append('use_ai', 'true')
+
+  const res = await apiRequest('/edit', { method: 'POST', body: formData })
+  return ensureOk(res)
 }
 
 export async function removeBackgroundRequest(imageBlob, model = 'u2net', alphaMatting = false) {
@@ -24,9 +44,8 @@ export async function removeBackgroundRequest(imageBlob, model = 'u2net', alphaM
   formData.append('alpha_matting', alphaMatting.toString())
   formData.append('format', 'png')
 
-  const res = await fetch(`${BASE_URL}/edit/remove-background`, { method: 'POST', body: formData })
-  if (!res.ok) throw new Error(`Server error: ${res.status}`)
-  return res
+  const res = await apiRequest('/edit/remove-background', { method: 'POST', body: formData })
+  return ensureOk(res)
 }
 
 export async function getAvailableModels() {

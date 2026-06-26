@@ -15,7 +15,8 @@ const Toolbar = ({
   onSaveProject, onLoadProject,
   onDeleteSelected, hasSelection,
   onMergeObjects, onUngroupObject,
-  hasMultipleSelection, hasGroupSelected
+  hasMultipleSelection, hasGroupSelected,
+  onGenerateClick,
 }) => {
   const [customWidth, setCustomWidth] = useState(canvasSize?.width || 1200)
   const [customHeight, setCustomHeight] = useState(canvasSize?.height || 800)
@@ -243,6 +244,7 @@ const Toolbar = ({
             📷 Add Image
             <input type="file" accept="image/*" onChange={e => onLoadImageAsObject(e.target.files[0])} style={{ display: 'none' }} />
           </label>
+          <Btn fullWidth onClick={onGenerateClick} color="#8b5cf6" title="Generate an image from a prompt">🪄 Generate Image</Btn>
           <Btn fullWidth onClick={onRemoveBackground} title="Remove background image">🗑️ Clear BG</Btn>
         </div>
       </div>

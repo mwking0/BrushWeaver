@@ -2,17 +2,23 @@ import React, { useState, useCallback } from 'react'
 import { fabric } from 'fabric'
 import Toolbar from './Toolbar'
 import AIPanel from './AIPanel'
+import GenerateModal from './GenerateModal'
 import { useCanvas } from '../../hooks/useCanvas'
 import { useHistory } from '../../hooks/useHistory'
 import { useCanvasTools } from '../../hooks/useCanvasTools'
 import { useCanvasObjects } from '../../hooks/useCanvasObjects'
 import { useKeyboardShortcuts } from '../../hooks/useKeyboardShortcuts'
-import { editImageRequest, removeBackgroundRequest } from '../../services/aiService'
+import { editImageRequest, generateImageRequest, removeBackgroundRequest } from '../../services/aiService'
 
 const DrawingEditor = ({ onCreditUsed }) => {
   const [brushColor, setBrushColor] = useState('#000000')
   const [brushSize, setBrushSize] = useState(5)
   const [isLoading, setIsLoading] = useState(false)
+
+  // ── Text-to-image modal ──────────────────────────────────────────────────
+  const [showGenerateModal, setShowGenerateModal] = useState(false)
+  const [generateLoading, setGenerateLoading] = useState(false)
+  const [generateError, setGenerateError] = useState(null)
 
   // ── History ──────────────────────────────────────────────────────────────
   const {
@@ -303,6 +309,55 @@ const DrawingEditor = ({ onCreditUsed }) => {
     }
   }, [canvas, exportCanvas, saveState, ensureBackgroundImagesAtBack, blobUrlsRef])
 
+  // ── Text-to-image generation ──────────────────────────────────────────────
+  const handleGenerateImage = useCallback(async (prompt) => {
+    if (!canvas || !prompt?.trim()) return
+    setGenerateLoading(true)
+    setGenerateError(null)
+    try {
+      const res = await generateImageRequest(prompt.trim())
+      const blob = await res.blob()
+      const url = URL.createObjectURL(blob)
+      blobUrlsRef.current.push(url)
+
+      await new Promise((resolve, reject) => {
+        fabric.Image.fromURL(url, (img) => {
+          if (!img) { reject(new Error('Failed to decode generated image')); return }
+          const scale = Math.min(canvas.width / img.width, canvas.height / img.height, 1)
+          img.set({
+            left: (canvas.width - img.width * scale) / 2,
+            top:  (canvas.height - img.height * scale) / 2,
+            scaleX: scale, scaleY: scale,
+            selectable: true, evented: true,
+          })
+          canvas.add(img)
+          canvas.setActiveObject(img)
+          canvas.renderAll()
+          setTimeout(() => saveState(canvas), 100)
+          setTimeout(() => {
+            URL.revokeObjectURL(url)
+            blobUrlsRef.current = blobUrlsRef.current.filter(u => u !== url)
+          }, 1000)
+          resolve()
+        }, (err) => reject(err || new Error('fabric.Image.fromURL failed')), { crossOrigin: 'anonymous' })
+      })
+
+      onCreditUsed?.()
+      setShowGenerateModal(false)
+    } catch (err) {
+      console.error('Generation error:', err)
+      if (err.status === 402) {
+        setGenerateError("You're out of credits. Top up to keep generating.")
+      } else if (err.message?.includes('Failed to fetch')) {
+        setGenerateError('Cannot reach the backend at http://localhost:8000.')
+      } else {
+        setGenerateError(`Generation failed: ${err.message || 'unknown error'}`)
+      }
+    } finally {
+      setGenerateLoading(false)
+    }
+  }, [canvas, saveState, onCreditUsed, blobUrlsRef])
+
   // ── Background Removal ────────────────────────────────────────────────────
   const handleRemoveBackground = useCallback(async (model = 'u2net', alphaMatting = false) => {
     if (!canvas) return
@@ -448,6 +503,7 @@ const DrawingEditor = ({ onCreditUsed }) => {
         onUngroupObject={ungroupSelectedObject}
         hasMultipleSelection={hasMultipleSelection}
         hasGroupSelected={hasGroupSelected}
+        onGenerateClick={() => { setGenerateError(null); setShowGenerateModal(true) }}
       />
 
       <div className="canvas-container">
@@ -494,6 +550,14 @@ const DrawingEditor = ({ onCreditUsed }) => {
         onUnlockObject={(id) => unlockObject(canvas, id, saveState)}
         onToggleObjectLock={(id) => toggleObjectLock(canvas, id, saveState)}
         onToggleObjectVisibility={(id) => toggleObjectVisibility(canvas, id, saveState)}
+      />
+
+      <GenerateModal
+        isOpen={showGenerateModal}
+        onClose={() => setShowGenerateModal(false)}
+        onGenerate={handleGenerateImage}
+        isLoading={generateLoading}
+        error={generateError}
       />
     </>
   )

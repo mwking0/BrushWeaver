@@ -1,6 +1,6 @@
 #Claude
 .claude
-
+.gitignore
 # Environment variables and secrets
 .env
 *.env

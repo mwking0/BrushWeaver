@@ -13,7 +13,7 @@ class Settings:
 
     # Google Gemini Configuration
     GEMINI_API_KEY: str = os.getenv("GEMINI_API_KEY", "")
-    GEMINI_MODEL: str = os.getenv("GEMINI_MODEL", "gemini-2.5-flash-image-preview")
+    GEMINI_MODEL: str = os.getenv("GEMINI_MODEL", "gemini-2.5-flash-image")
 
     # Server Configuration
     HOST: str = "127.0.0.1"
